@@ -1,0 +1,381 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Bot,
+  Mic,
+  MicOff,
+  PhoneCall,
+  PhoneOff,
+  Volume2,
+  Waves,
+} from "lucide-react";
+import { api } from "@/lib/api";
+import { Agent, AgentSessionConfig, Voice } from "@/types";
+
+type AgentState = "disconnected" | "connecting" | "listening" | "thinking" | "speaking";
+
+interface TranscriptMessage {
+  id: string;
+  sender: "user" | "agent";
+  text: string;
+  time: string;
+}
+
+export default function AgentPlaygroundPage() {
+  const params = useParams();
+  const router = useRouter();
+  const agentId = params.id as string;
+
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [voice, setVoice] = useState<Voice | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [agentState, setAgentState] = useState<AgentState>("disconnected");
+  const [transcripts, setTranscripts] = useState<TranscriptMessage[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const socketRef = useRef<WebSocket | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    loadAgentData();
+    return () => {
+      endConversation();
+    };
+  }, [agentId]);
+
+  const loadAgentData = async () => {
+    setLoading(true);
+    try {
+      const a = await api.getAgent(agentId);
+      setAgent(a);
+      if (a.voice_id) {
+        const v = await api.getVoice(a.voice_id);
+        setVoice(v);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to load agent");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startConversation = async () => {
+    setErrorMessage(null);
+    setAgentState("connecting");
+
+    try {
+      // 1. Request microphone permission
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+      mediaStreamRef.current = stream;
+
+      // 2. Request authenticated session from backend
+      const sessionConfig: AgentSessionConfig = await api.startAgentSession(agentId);
+
+      // Add agent's first greeting to transcript
+      if (agent?.first_message) {
+        setTranscripts([
+          {
+            id: "greeting",
+            sender: "agent",
+            text: agent.first_message,
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+        ]);
+      }
+
+      // 3. Connect to WebSocket
+      const ws = new WebSocket(sessionConfig.signed_url);
+      socketRef.current = ws;
+
+      ws.onopen = () => {
+        setAgentState("listening");
+        // Start call duration timer
+        timerRef.current = setInterval(() => {
+          setCallDuration((prev) => prev + 1);
+        }, 1000);
+
+        // Send conversation initiation config
+        ws.send(
+          JSON.stringify({
+            type: "conversation_initiation_client_data",
+            conversation_config_override: sessionConfig.session_config.overrides,
+          })
+        );
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "agent_response") {
+            setAgentState("speaking");
+            setTranscripts((prev) => [
+              ...prev,
+              {
+                id: Math.random().toString(),
+                sender: "agent",
+                text: data.agent_response_event?.agent_response || "",
+                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              },
+            ]);
+          } else if (data.type === "user_transcript") {
+            setAgentState("thinking");
+            setTranscripts((prev) => [
+              ...prev,
+              {
+                id: Math.random().toString(),
+                sender: "user",
+                text: data.user_transcription_event?.user_transcript || "",
+                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              },
+            ]);
+          } else if (data.type === "audio") {
+            // Play received audio chunk if needed
+            setAgentState("speaking");
+          } else if (data.type === "interruption") {
+            setAgentState("listening");
+          }
+        } catch {
+          // Non-JSON binary audio packet
+        }
+      };
+
+      ws.onerror = (e) => {
+        setErrorMessage("WebSocket connection error. Please verify ElevenLabs agent configuration.");
+        endConversation();
+      };
+
+      ws.onclose = () => {
+        endConversation();
+      };
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to start conversation session.");
+      endConversation();
+    }
+  };
+
+  const endConversation = () => {
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setAgentState("disconnected");
+  };
+
+  const toggleMute = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = isMuted;
+      });
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const formatDuration = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  const getStateBadge = () => {
+    switch (agentState) {
+      case "connecting":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+            Connecting...
+          </span>
+        );
+      case "listening":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+            Listening to you...
+          </span>
+        );
+      case "thinking":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+            Thinking...
+          </span>
+        );
+      case "speaking":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+            <Volume2 className="h-3.5 w-3.5 text-purple-500 animate-bounce" />
+            Speaking in {voice?.name || "cloned voice"}
+          </span>
+        );
+      default:
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+            <span className="w-2 h-2 rounded-full bg-neutral-400"></span>
+            Ready to call
+          </span>
+        );
+    }
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-6">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/agents"
+          className="inline-flex items-center gap-2 text-xs font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Agents</span>
+        </Link>
+
+        {agentState !== "disconnected" && (
+          <div className="font-mono text-xs px-3 py-1 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300">
+            Call Duration: {formatDuration(callDuration)}
+          </div>
+        )}
+      </div>
+
+      {errorMessage && (
+        <div className="flex items-center gap-2 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Main Conversation Container */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Agent Profile & Interactive Call Card */}
+        <div className="p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm flex flex-col justify-between space-y-8">
+          <div className="space-y-6 text-center">
+            {/* Visual Call Orb */}
+            <div className="relative mx-auto w-32 h-32 flex items-center justify-center">
+              <div
+                className={`absolute inset-0 rounded-full transition-all duration-700 ${
+                  agentState === "speaking"
+                    ? "bg-purple-500/20 scale-125 animate-ping"
+                    : agentState === "listening"
+                    ? "bg-emerald-500/20 scale-110 animate-pulse"
+                    : "bg-neutral-100 dark:bg-neutral-800"
+                }`}
+              ></div>
+              <div className="relative z-10 w-24 h-24 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center shadow-lg">
+                <Bot className="h-10 w-10" />
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold text-neutral-900 dark:text-white">
+                {agent?.name || "AI Voice Agent"}
+              </h2>
+              <p className="text-xs text-neutral-500 mt-1">
+                Speaking with: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{voice?.name || "Cloned Voice"}</span>
+              </p>
+            </div>
+
+            <div className="flex justify-center">{getStateBadge()}</div>
+          </div>
+
+          {/* Call Controls */}
+          <div className="space-y-3 pt-6 border-t border-neutral-100 dark:border-neutral-800">
+            {agentState === "disconnected" ? (
+              <button
+                onClick={startConversation}
+                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2.5 active:scale-98"
+              >
+                <PhoneCall className="h-4 w-4" />
+                <span>Start Voice Conversation</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleMute}
+                  title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
+                  className={`p-3.5 rounded-2xl border transition-all ${
+                    isMuted
+                      ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-600"
+                      : "bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300"
+                  }`}
+                >
+                  {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                </button>
+
+                <button
+                  onClick={endConversation}
+                  className="flex-1 py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all shadow-md flex items-center justify-center gap-2.5 active:scale-98"
+                >
+                  <PhoneOff className="h-4 w-4" />
+                  <span>End Conversation</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Live Transcript Stream */}
+        <div className="lg:col-span-2 p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm flex flex-col justify-between h-[520px]">
+          <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800">
+            <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">Live Conversation Transcript</h3>
+            <span className="text-xs text-neutral-400">Real-time turn stream</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-4 space-y-4">
+            {transcripts.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center text-neutral-400 space-y-2">
+                <Waves className="h-8 w-8 stroke-1" />
+                <p className="text-xs">Start a conversation and speak into your microphone.</p>
+                <p className="text-[11px] text-neutral-500">Transcripts will stream here in real time.</p>
+              </div>
+            ) : (
+              transcripts.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-xs ${
+                      msg.sender === "user"
+                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-tr-xs"
+                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white rounded-tl-xs"
+                    }`}
+                  >
+                    <p>{msg.text}</p>
+                  </div>
+                  <span className="text-[10px] text-neutral-400 mt-1 px-1">{msg.time}</span>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[11px] text-neutral-400">
+            <span>Powered by ElevenLabs Conversational AI</span>
+            <span>Interrupt speaking agent anytime</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,59 @@
+from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    APP_ENV: str = "development"
+    APP_SECRET_KEY: str = "dev-secret-key-for-local-development-only-32chars"
+    FRONTEND_URL: str = "http://localhost:3000"
+    BACKEND_URL: str = "http://localhost:8000"
+
+    # Database
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/voicerep"
+    SYNC_DATABASE_URL: Optional[str] = None
+
+    # Supabase Auth
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_ANON_KEY: Optional[str] = None
+    SUPABASE_JWKS_URL: Optional[str] = None
+    SUPABASE_JWT_SECRET: Optional[str] = None
+
+    # ElevenLabs
+    ELEVENLABS_API_KEY: Optional[str] = None
+    ELEVENLABS_AGENT_ID: Optional[str] = None
+
+    # Gemini (Optional Analysis)
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-3.8-flash"
+
+    # Storage (Cloudflare R2 / S3)
+    R2_ACCOUNT_ID: Optional[str] = None
+    R2_ACCESS_KEY_ID: Optional[str] = None
+    R2_SECRET_ACCESS_KEY: Optional[str] = None
+    R2_BUCKET_NAME: str = "voicerep-audio"
+    R2_ENDPOINT_URL: Optional[str] = None
+    LOCAL_STORAGE_PATH: str = "./storage"
+
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # Upload configuration
+    MAX_UPLOAD_SIZE_MB: int = 50
+    MAX_AUDIO_DURATION_SECONDS: int = 300
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+    @property
+    def is_production(self) -> bool:
+        return self.APP_ENV.lower() == "production"
+
+    @property
+    def max_upload_size_bytes(self) -> int:
+        return self.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
+
+settings = Settings()
