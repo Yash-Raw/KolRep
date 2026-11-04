@@ -105,15 +105,18 @@ When `self_hosted` is active:
 ## 5. Implementation Roadmap
 
 - [x] **Research & Evaluation**: Benchmark open-source models (F5-TTS, CosyVoice 2, Chatterbox).
-- [ ] **Phase 1: Self-Hosted Engine Implementation**:
-  - Install dependencies (`f5-tts` / `torch` with Apple Silicon `mps` / CUDA support).
-  - Implement `SelfHostedProvider` in `backend/app/providers/self_hosted.py`.
-  - Wire provider factory in `backend/app/providers/__init__.py` supporting `settings.VOICE_PROVIDER`.
-- [ ] **Phase 2: Local Storage & Profile Management**:
-  - Store and manage local reference audio and transcripts.
-  - Test voice cloning and speech generation with local engine.
-- [ ] **Phase 3: Conversational Voice Agent WebSocket Streaming**:
-  - Implement local streaming audio endpoint for the Agent Playground.
-- [ ] **Phase 4: Verification & Automated Tests**:
-  - Add `backend/tests/test_self_hosted_provider.py`.
-  - Verify complete workflow in Voice Library, Voice Studio, and Voice Agents.
+- [x] **Phase 1: Self-Hosted Engine Implementation**:
+  - Installed dependencies (`f5-tts`, `torch` 2.15 with Apple Silicon `mps` acceleration, `vocos`, `torchcodec`, `cached_path`).
+  - Implemented `SelfHostedProvider` in `backend/app/providers/self_hosted.py`.
+  - Wired provider factory in `backend/app/providers/__init__.py` supporting `settings.VOICE_PROVIDER` with transparent toggle.
+- [x] **Phase 2: Local Storage & Profile Management**:
+  - Reference audio, transcripts, and metadata stored in `storage/voice_profiles/{voice_id}/`.
+  - Zero-shot instant voice cloning validated with `POST /api/v1/voices`.
+  - Neural flow-matching speech generation validated with `POST /api/v1/generations`.
+- [x] **Phase 3: Conversational Voice Agent WebSocket Streaming**:
+  - Implemented bidirectional streaming WebSocket endpoint at `/api/v1/agents/ws/{session_id}`.
+  - Verified initiation, user transcript handling, and agent response streaming matching the Agent Playground protocol.
+- [x] **Phase 4: Verification & Automated Tests**:
+  - Added comprehensive test suite in `backend/tests/test_self_hosted_provider.py`.
+  - 16/16 backend tests passed (`pytest -v`).
+  - Next.js production build cleanly compiled with all 11 routes.

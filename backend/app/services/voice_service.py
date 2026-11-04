@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.voice import Voice
 from app.models.voice_consent import VoiceConsent
-from app.providers.elevenlabs import elevenlabs_provider
+from app.providers import elevenlabs_provider, get_voice_provider, self_hosted_provider
 from app.schemas.audio import AudioQualityReport
 from app.schemas.voice import VoiceCreate, VoiceUpdate
 from app.services.audio_service import audio_service
@@ -74,7 +74,7 @@ class VoiceService:
                 id=uuid.uuid4(),
                 owner_id=owner_id,
                 name=voice_data.name.strip(),
-                provider="elevenlabs",
+                provider=settings.VOICE_PROVIDER.lower(),
                 status="cloning",
                 language=voice_data.language or "en",
                 audio_duration=report.duration_seconds,
@@ -98,9 +98,10 @@ class VoiceService:
             await db.commit()
             await db.refresh(voice)
 
-            # Perform cloning with ElevenLabs
+            # Perform cloning with active provider (Self-Hosted / ElevenLabs)
             try:
-                clone_res = await elevenlabs_provider.create_voice(
+                active_provider = get_voice_provider(voice.provider)
+                clone_res = await active_provider.create_voice(
                     name=voice.name,
                     audio_file_path=temp_wav,
                     description=f"Cloned for VoiceRep user {owner_id}",
@@ -210,7 +211,7 @@ class VoiceService:
         # Delete from provider
         if voice.provider_voice_id:
             try:
-                await elevenlabs_provider.delete_voice(voice.provider_voice_id)
+                await get_voice_provider(voice.provider).delete_voice(voice.provider_voice_id)
             except Exception as e:
                 logger.warning(f"Could not delete provider voice: {e}")
 

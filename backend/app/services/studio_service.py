@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.generation import Generation
 from app.models.voice import Voice
-from app.providers.elevenlabs import elevenlabs_provider
+from app.providers import elevenlabs_provider, get_voice_provider, self_hosted_provider
 from app.schemas.generation import GenerationCreate
 from app.services.audio_service import audio_service
 from app.services.storage_service import storage_service
@@ -67,10 +67,11 @@ class StudioService:
         await db.commit()
         await db.refresh(generation)
 
-        # Call ElevenLabs TTS
+        # Call active voice provider TTS
         storage_key = f"generations/{owner_id}/{gen_id}.mp3"
         try:
-            audio_bytes = await elevenlabs_provider.synthesize(
+            active_provider = get_voice_provider(voice.provider)
+            audio_bytes = await active_provider.synthesize(
                 voice_id=voice.provider_voice_id,
                 text=text,
                 settings=payload.voice_settings.model_dump(),
