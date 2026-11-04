@@ -119,7 +119,7 @@ class VoiceService:
                 await db.refresh(voice)
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Voice cloning provider error: {str(e)}",
+                    detail=str(e),
                 )
 
             await db.commit()

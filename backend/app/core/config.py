@@ -1,5 +1,14 @@
+from pathlib import Path
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+_ROOT_DIR = _BACKEND_DIR.parent
+_ENV_FILES = [
+    str(_ROOT_DIR / ".env"),
+    str(_BACKEND_DIR / ".env"),
+    ".env",
+]
 
 
 class Settings(BaseSettings):
@@ -42,9 +51,9 @@ class Settings(BaseSettings):
     MAX_AUDIO_DURATION_SECONDS: int = 300
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILES,
         env_file_encoding="utf-8",
-        extra="ignore"
+        extra="ignore",
     )
 
     @property

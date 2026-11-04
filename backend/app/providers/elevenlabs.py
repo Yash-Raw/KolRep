@@ -11,17 +11,22 @@ BASE_URL = "https://api.elevenlabs.io/v1"
 
 
 class ElevenLabsProvider(VoiceProvider):
-    def __init__(self):
-        self.api_key = settings.ELEVENLABS_API_KEY
-        self.agent_id = settings.ELEVENLABS_AGENT_ID
+    @property
+    def api_key(self) -> Optional[str]:
+        return settings.ELEVENLABS_API_KEY or os.environ.get("ELEVENLABS_API_KEY")
+
+    @property
+    def agent_id(self) -> Optional[str]:
+        return settings.ELEVENLABS_AGENT_ID or os.environ.get("ELEVENLABS_AGENT_ID")
 
     def _get_headers(self) -> dict[str, str]:
-        if not self.api_key:
+        key = self.api_key
+        if not key:
             raise ValueError(
-                "ElevenLabs API key is not configured. Please set ELEVENLABS_API_KEY in your environment."
+                "ElevenLabs API key is not configured. Please set ELEVENLABS_API_KEY in your .env file."
             )
         return {
-            "xi-api-key": self.api_key,
+            "xi-api-key": key,
         }
 
     async def create_voice(
@@ -65,7 +70,12 @@ class ElevenLabsProvider(VoiceProvider):
                 err_json = response.json()
                 detail = err_json.get("detail", {})
                 if isinstance(detail, dict):
-                    error_text = detail.get("message", error_text)
+                    status_flag = detail.get("status", "")
+                    msg = detail.get("message", "")
+                    if status_flag == "can_not_use_instant_voice_cloning" or "subscription tier" in msg.lower():
+                        error_text = "Instant Voice Cloning is not available on ElevenLabs' Free tier. ElevenLabs requires at least a Starter subscription ($5/mo) to create custom voice clones via the API."
+                    else:
+                        error_text = msg or status_flag or error_text
                 elif isinstance(detail, str):
                     error_text = detail
             except Exception:
@@ -139,7 +149,12 @@ class ElevenLabsProvider(VoiceProvider):
                 err_json = response.json()
                 detail = err_json.get("detail", {})
                 if isinstance(detail, dict):
-                    error_text = detail.get("message", error_text)
+                    status_flag = detail.get("status", "")
+                    msg = detail.get("message", "")
+                    if status_flag == "can_not_use_instant_voice_cloning" or "subscription tier" in msg.lower():
+                        error_text = "Instant Voice Cloning is not available on ElevenLabs' Free tier. ElevenLabs requires at least a Starter subscription ($5/mo) to create custom voice clones via the API."
+                    else:
+                        error_text = msg or status_flag or error_text
                 elif isinstance(detail, str):
                     error_text = detail
             except Exception:
@@ -171,7 +186,12 @@ class ElevenLabsProvider(VoiceProvider):
                 err_json = response.json()
                 detail = err_json.get("detail", {})
                 if isinstance(detail, dict):
-                    error_text = detail.get("message", error_text)
+                    status_flag = detail.get("status", "")
+                    msg = detail.get("message", "")
+                    if status_flag == "can_not_use_instant_voice_cloning" or "subscription tier" in msg.lower():
+                        error_text = "Instant Voice Cloning is not available on ElevenLabs' Free tier. ElevenLabs requires at least a Starter subscription ($5/mo) to create custom voice clones via the API."
+                    else:
+                        error_text = msg or status_flag or error_text
                 elif isinstance(detail, str):
                     error_text = detail
             except Exception:
