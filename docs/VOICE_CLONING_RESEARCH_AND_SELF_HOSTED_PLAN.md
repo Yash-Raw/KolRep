@@ -118,5 +118,32 @@ When `self_hosted` is active:
   - Verified initiation, user transcript handling, and agent response streaming matching the Agent Playground protocol.
 - [x] **Phase 4: Verification & Automated Tests**:
   - Added comprehensive test suite in `backend/tests/test_self_hosted_provider.py`.
-  - 16/16 backend tests passed (`pytest -v`).
+  - 17/17 backend tests passed (`pytest -v`).
   - Next.js production build cleanly compiled with all 11 routes.
+
+---
+
+## 6. Accuracy & Acoustic Fidelity Iteration
+
+### Root Cause Diagnosis of Initial Low Accuracy
+In zero-shot flow-matching diffusion models (F5-TTS), conditioning operates by concatenating:
+$$\mathbf{X} = [\mathbf{x}_{\text{ref}}, \mathbf{x}_{\text{target\_noise}}], \quad \mathbf{C} = [\mathbf{c}_{\text{ref\_text}}, \mathbf{c}_{\text{target\_text}}]$$
+The model enforces cross-attention between what is spoken in the audio slice ($\mathbf{x}_{\text{ref}}$) and what words are declared in $\mathbf{c}_{\text{ref\_text}}$. When $\mathbf{c}_{\text{ref\_text}}$ was populated with placeholder text (`"Cloned for VoiceRep user..."`) rather than what the speaker literally enunciated:
+1. **Severe Cross-Attention Misalignment**: The flow-matching ODE vector field tried to force acoustic formant transitions for words that did not exist in the reference waveform, inducing slurring and garbling.
+2. **Diluted Timbre Encoding**: Unaligned prompt tokens resulted in noisy latent style representations.
+
+### Implemented Enhancements & Optimizations
+1. **Automatic Verbatim Speech Recognition (Whisper ASR)**:
+   - Reference audio is transcribed using `openai/whisper-tiny` (or user-provided manual transcript in `CreateVoiceModal`), ensuring 100% exact text-to-phoneme alignment.
+2. **Audio Preprocessing & Prime Slicing**:
+   - Trims leading/trailing dead silences via peak threshold filtering.
+   - Resamples strictly to 24,000 Hz mono PCM WAV (native to F5-TTS).
+   - Bounds the prompt to the prime 6–12 second high-energy speech segment.
+3. **Text Normalization Engine (`normalize_speech_text`)**:
+   - Expands currencies (`$50` -> `50 dollars`), percentages (`15%` -> `15 percent`), symbols (`&` -> `and`), titles, and common abbreviations to guarantee pristine phoneme tokenization.
+4. **ODE Hyperparameter Tuning**:
+   - Dynamic Classifier-Free Guidance ($\text{CFG} \in [1.8, 2.6]$ mapped to user's similarity boost slider) to sharpen pronunciation.
+   - Sway sampling schedule coefficient $\text{sway} = -1.0$ for optimal-transport straight-path trajectory.
+   - Evaluation steps increased to $\text{NFE} \ge 36$.
+   - Automatic silence removal (`remove_silence=True`) on synthesized waveforms to eliminate awkward gaps.
+   - Audio exported as 256kbps high-bitrate MP3.

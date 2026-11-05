@@ -12,7 +12,7 @@ from starlette.testclient import TestClient
 from app.core.config import settings
 from app.main import app
 from app.models.voice import Voice
-from app.providers.self_hosted import SelfHostedProvider, self_hosted_provider
+from app.providers.self_hosted import SelfHostedProvider, normalize_speech_text, self_hosted_provider
 from tests.conftest import TEST_USER_ID
 
 
@@ -153,3 +153,13 @@ def test_agent_conversational_websocket_endpoint():
         agent_reply = ws.receive_json()
         assert agent_reply["type"] == "agent_response"
         assert "summarize my notifications" in agent_reply["agent_response_event"]["agent_response"]
+
+
+def test_text_normalization():
+    raw_text = "Dr. Smith paid $150 (approx. 20%) for AI tools & services"
+    normalized = normalize_speech_text(raw_text)
+    assert "Doctor" in normalized
+    assert "150 dollars" in normalized
+    assert "20 percent" in normalized
+    assert "and" in normalized
+    assert normalized.endswith(".")
