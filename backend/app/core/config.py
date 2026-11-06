@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     SUPABASE_JWKS_URL: Optional[str] = None
     SUPABASE_JWT_SECRET: Optional[str] = None
 
+    # Voice Provider Configuration ("self_hosted" or "elevenlabs")
+    VOICE_PROVIDER: str = "self_hosted"
+
+    # Self-Hosted Voice Engine Settings
+    SELF_HOSTED_MODEL: str = "F5TTS_v1_Base"
+    SELF_HOSTED_DEVICE: str = "auto"
+    SELF_HOSTED_VOICE_DIR: str = "./storage/voice_profiles"
+    SELF_HOSTED_NFE_STEPS: int = 32
+
     # ElevenLabs
     ELEVENLABS_API_KEY: Optional[str] = None
     ELEVENLABS_AGENT_ID: Optional[str] = None

@@ -15,6 +15,7 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [file, setFile] = useState<File | null>(null);
   const [voiceName, setVoiceName] = useState("");
+  const [transcript, setTranscript] = useState("");
   const [language, setLanguage] = useState("en");
   const [speakerRelationship, setSpeakerRelationship] = useState("self");
   const [speechGenAllowed, setSpeechGenAllowed] = useState(true);
@@ -67,6 +68,9 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
       formData.append("name", voiceName.trim());
       formData.append("language", language);
       formData.append("speaker_relationship", speakerRelationship);
+      if (transcript.trim()) {
+        formData.append("transcript", transcript.trim());
+      }
       formData.append(
         "consent_scope",
         JSON.stringify({
@@ -174,6 +178,22 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
                     )}
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Spoken Transcript (Optional)
+                  </label>
+                  <span className="text-xs text-neutral-500">Auto-detected if blank</span>
+                </div>
+                <textarea
+                  value={transcript}
+                  onChange={(e) => setTranscript(e.target.value)}
+                  placeholder="What is said in the audio? Leave blank to auto-detect with Whisper AI."
+                  rows={2}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white resize-none"
+                />
               </div>
 
               <div className="flex justify-end pt-2">

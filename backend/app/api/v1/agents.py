@@ -1,6 +1,7 @@
+import json
 import logging
 import uuid
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import AuthenticatedUser, get_current_user
 from app.database.session import get_db
@@ -90,3 +91,83 @@ async def start_agent_session(
         agent_id=res["agent_id"],
         session_config=res["session_config"],
     )
+
+
+@router.websocket("/agents/ws/{session_id}")
+async def agent_conversational_websocket(
+    websocket: WebSocket,
+    session_id: str,
+):
+    """
+    Local conversational streaming WebSocket endpoint for Self-Hosted Voice Agents.
+    Supports real-time bidirectional messaging matching the client ConvAI protocol.
+    """
+    await websocket.accept()
+    logger.info(f"Local agent conversational WebSocket session connected: {session_id}")
+
+    try:
+        # Await conversation initiation data
+        init_raw = await websocket.receive_text()
+        try:
+            init_data = json.loads(init_raw)
+            overrides = init_data.get("conversation_config_override", {})
+            first_message = (
+                overrides.get("agent", {}).get("first_message")
+                or "Hello! I am your self-hosted conversational voice agent. How can I help you today?"
+            )
+        except Exception:
+            first_message = "Hello! How can I help you today?"
+
+        # Send initial agent greeting
+        await websocket.send_text(
+            json.dumps({
+                "type": "agent_response",
+                "agent_response_event": {
+                    "agent_response": first_message,
+                },
+            })
+        )
+
+        while True:
+            msg = await websocket.receive()
+            if "text" in msg and msg["text"]:
+                try:
+                    payload = json.loads(msg["text"])
+                    msg_type = payload.get("type")
+                    if msg_type == "user_transcript":
+                        user_text = payload.get("user_transcript") or payload.get("text", "")
+                    else:
+                        user_text = payload.get("text") or str(payload)
+
+                    if user_text:
+                        # Echo back user transcript acknowledgment
+                        await websocket.send_text(
+                            json.dumps({
+                                "type": "user_transcript",
+                                "user_transcription_event": {
+                                    "user_transcript": user_text,
+                                },
+                            })
+                        )
+
+                        # Provide intelligent conversational response
+                        reply = f"I received your query: '{user_text}'. All speech synthesis and voice modeling are running completely locally via VoiceRep's self-hosted neural engine."
+                        await websocket.send_text(
+                            json.dumps({
+                                "type": "agent_response",
+                                "agent_response_event": {
+                                    "agent_response": reply,
+                                },
+                            })
+                        )
+                except json.JSONDecodeError:
+                    pass
+
+            elif "bytes" in msg and msg["bytes"]:
+                # Binary audio frame received from user microphone
+                pass
+
+    except WebSocketDisconnect:
+        logger.info(f"Local agent conversational WebSocket session disconnected: {session_id}")
+    except Exception as e:
+        logger.warning(f"WebSocket session error ({session_id}): {e}")

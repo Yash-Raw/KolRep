@@ -29,6 +29,7 @@ dist/
 build/
 
 # Local data & storage
+storage/
 backend/storage/
 *.sqlite3
 *.db

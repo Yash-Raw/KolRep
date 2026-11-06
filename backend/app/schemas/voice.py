@@ -19,6 +19,8 @@ class VoiceCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     language: Optional[str] = Field(default="en", max_length=32)
     speaker_relationship: str = Field(default="self")
+    transcript: Optional[str] = Field(None, max_length=1000, description="Exact spoken words in the reference audio")
+    description: Optional[str] = Field(None, max_length=500, description="Voice description")
     consent_scope: dict[str, bool] = Field(
         default_factory=lambda: {"speech_generation": True, "ai_agent": True}
     )

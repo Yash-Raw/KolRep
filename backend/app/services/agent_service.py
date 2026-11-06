@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.agent import Agent
 from app.models.agent_session import AgentSession
 from app.models.voice import Voice
-from app.providers.elevenlabs import elevenlabs_provider
+from app.providers import elevenlabs_provider, get_voice_provider, self_hosted_provider
 from app.schemas.agent import AgentCreate, AgentUpdate
 
 logger = logging.getLogger("voicerep.agent_service")
@@ -184,9 +184,10 @@ class AgentService:
         await db.commit()
         await db.refresh(session)
 
-        # Get signed ConvAI URL from ElevenLabs
+        # Get signed ConvAI session parameters from active provider
         try:
-            conv_data = await elevenlabs_provider.create_agent_session(
+            active_provider = get_voice_provider(voice.provider)
+            conv_data = await active_provider.create_agent_session(
                 provider_voice_id=voice.provider_voice_id,
                 agent_config={
                     "system_prompt": agent.system_prompt,

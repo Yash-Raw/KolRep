@@ -33,6 +33,8 @@ async def create_voice(
     name: str = Form(..., min_length=2, max_length=100),
     language: Optional[str] = Form("en"),
     speaker_relationship: str = Form("self"),
+    transcript: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
     consent_scope: Optional[str] = Form(None),
     terms_accepted: bool = Form(...),
     db: AsyncSession = Depends(get_db),
@@ -50,6 +52,8 @@ async def create_voice(
         name=name,
         language=language,
         speaker_relationship=speaker_relationship,
+        transcript=transcript,
+        description=description,
         consent_scope=parsed_scope,
         terms_accepted=terms_accepted,
     )
