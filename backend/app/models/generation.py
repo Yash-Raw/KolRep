@@ -13,7 +13,7 @@ class Generation(Base):
     owner_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     voice_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("voices.id", ondelete="CASCADE"), nullable=False, index=True)
     input_text: Mapped[str] = mapped_column(Text, nullable=False)
-    model_id: Mapped[str] = mapped_column(String(128), default="eleven_multilingual_v2", nullable=False)
+    model_id: Mapped[str] = mapped_column(String(128), default="F5TTS_v1_Base", nullable=False)
     voice_settings: Mapped[dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="queued", nullable=False, index=True)
     audio_storage_key: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)

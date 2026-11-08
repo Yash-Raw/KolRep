@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.agent import Agent
 from app.models.agent_session import AgentSession
 from app.models.voice import Voice
-from app.providers import elevenlabs_provider, get_voice_provider, self_hosted_provider
+from app.providers import get_voice_provider, self_hosted_provider
 from app.schemas.agent import AgentCreate, AgentUpdate
 
 logger = logging.getLogger("voicerep.agent_service")

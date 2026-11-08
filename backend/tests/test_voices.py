@@ -31,9 +31,9 @@ def sample_audio_bytes():
 
 @pytest.mark.asyncio
 async def test_create_voice_flow(client, sample_audio_bytes):
-    mock_provider_res = {"voice_id": "mock_el_voice_123", "requires_verification": False}
+    mock_provider_res = {"voice_id": "self_hosted_voice_123", "requires_verification": False}
 
-    with patch("app.services.voice_service.elevenlabs_provider.create_voice", new_callable=AsyncMock) as mock_create:
+    with patch("app.services.voice_service.self_hosted_provider.create_voice", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = mock_provider_res
 
         files = {"file": ("test_voice.wav", io.BytesIO(sample_audio_bytes), "audio/wav")}
@@ -49,7 +49,7 @@ async def test_create_voice_flow(client, sample_audio_bytes):
         res_json = response.json()
         assert res_json["name"] == "Sarah Persona"
         assert res_json["status"] == "ready"
-        assert res_json["provider_voice_id"] == "mock_el_voice_123"
+        assert res_json["provider_voice_id"] == "self_hosted_voice_123"
         voice_id = res_json["id"]
 
         # Verify listing
@@ -70,7 +70,7 @@ async def test_create_voice_flow(client, sample_audio_bytes):
         assert patch_res.json()["name"] == "Sarah Voice Clone V2"
 
         # Verify delete
-        with patch("app.services.voice_service.elevenlabs_provider.delete_voice", new_callable=AsyncMock) as mock_del:
+        with patch("app.services.voice_service.self_hosted_provider.delete_voice", new_callable=AsyncMock) as mock_del:
             mock_del.return_value = True
             del_res = await client.delete(f"/api/v1/voices/{voice_id}")
             assert del_res.status_code == 204

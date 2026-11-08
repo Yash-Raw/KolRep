@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.generation import Generation
 from app.models.voice import Voice
-from app.providers import elevenlabs_provider, get_voice_provider, self_hosted_provider
+from app.providers import get_voice_provider, self_hosted_provider
 from app.schemas.generation import GenerationCreate
 from app.services.audio_service import audio_service
 from app.services.storage_service import storage_service

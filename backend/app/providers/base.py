@@ -30,7 +30,7 @@ class VoiceProvider(ABC):
         voice_id: str,
         text: str,
         settings: dict[str, Any],
-        model_id: str = "eleven_multilingual_v2",
+        model_id: str = "F5TTS_v1_Base",
     ) -> bytes:
         """Synthesize text into speech audio bytes."""
         pass

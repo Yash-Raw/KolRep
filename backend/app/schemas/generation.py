@@ -14,7 +14,7 @@ class VoiceSettings(BaseModel):
 class GenerationCreate(BaseModel):
     voice_id: uuid.UUID
     input_text: str = Field(..., min_length=1, max_length=5000)
-    model_id: str = Field(default="eleven_multilingual_v2")
+    model_id: str = Field(default="F5TTS_v1_Base")
     voice_settings: VoiceSettings = Field(default_factory=VoiceSettings)
 
 

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.voice import Voice
 from app.models.voice_consent import VoiceConsent
-from app.providers import elevenlabs_provider, get_voice_provider, self_hosted_provider
+from app.providers import get_voice_provider, self_hosted_provider
 from app.schemas.audio import AudioQualityReport
 from app.schemas.voice import VoiceCreate, VoiceUpdate
 from app.services.audio_service import audio_service
@@ -98,7 +98,7 @@ class VoiceService:
             await db.commit()
             await db.refresh(voice)
 
-            # Perform cloning with active provider (Self-Hosted / ElevenLabs)
+            # Perform cloning with 100% self-hosted local provider
             try:
                 active_provider = get_voice_provider(voice.provider)
                 clone_res = await active_provider.create_voice(
