@@ -42,7 +42,7 @@ elif docker ps --format '{{.Names}}' | grep -q 'voicerep_postgres'; then
     echo "✓ PostgreSQL container is running."
 else
     echo "Starting PostgreSQL and Redis via Docker Compose..."
-    docker-compose up -d db redis 2>/dev/null || echo "Note: Starting background services (ensure DB is running on :5432)."
+    docker compose up -d db redis 2>/dev/null || docker-compose up -d db redis 2>/dev/null || echo "Note: Starting background services (ensure DB is running on :5432)."
 fi
 
 # 4. Apply Alembic Migrations

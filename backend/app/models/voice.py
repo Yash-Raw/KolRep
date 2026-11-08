@@ -12,7 +12,7 @@ class Voice(Base):
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     owner_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    provider: Mapped[str] = mapped_column(String(64), default="elevenlabs", nullable=False)
+    provider: Mapped[str] = mapped_column(String(64), default="self_hosted", nullable=False)
     provider_voice_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(64), default="upload_pending", nullable=False, index=True)
     language: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)

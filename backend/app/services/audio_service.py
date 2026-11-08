@@ -94,8 +94,6 @@ class AudioService:
             warnings.append("Audio sample is shorter than 5 seconds. Voice cloning may sound inaccurate.")
         elif duration > settings.MAX_AUDIO_DURATION_SECONDS:
             raise ValueError(f"Audio duration ({duration:.1f}s) exceeds maximum allowed limit ({settings.MAX_AUDIO_DURATION_SECONDS}s).")
-        elif settings.VOICE_PROVIDER.lower() == "elevenlabs" and duration < 45.0:
-            warnings.append("Sample is under 45 seconds. Best results with ElevenLabs are achieved with 60 to 120 seconds of speech.")
 
         # Sample rate validation
         if sample_rate < 22050:
@@ -112,9 +110,8 @@ class AudioService:
             warnings.append("High amount of silence or low speech activity detected.")
 
         # Quality scoring (calibrated for diffusion-based zero-shot voice cloning)
-        is_self_hosted = settings.VOICE_PROVIDER.lower() == "self_hosted"
-        min_good_dur = 6.0 if is_self_hosted else 45.0
-        min_acc_dur = 5.0 if is_self_hosted else 15.0
+        min_good_dur = 6.0
+        min_acc_dur = 5.0
 
         if duration >= min_good_dur and not has_clipping and (speech_ratio is None or speech_ratio >= 0.45) and not warnings:
             quality = "good"

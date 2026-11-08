@@ -18,7 +18,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Activity },
   { href: "/voices", label: "Voice Library", icon: Mic2 },
   { href: "/studio", label: "Voice Studio", icon: Sparkles },
-  { href: "/agents", label: "Voice Agents", icon: Bot },
+  { href: "/agents", label: "Voice Agents", icon: Bot, badge: "v1.1" },
   { href: "/history", label: "History", icon: History },
   { href: "/settings", label: "Settings", icon: Sliders },
 ];
@@ -92,6 +92,11 @@ export function Navbar() {
                 >
                   <Icon className={`h-4 w-4 ${isActive ? "text-neutral-900 dark:text-white" : "text-neutral-500"}`} />
                   <span>{item.label}</span>
+                  {item.badge && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
