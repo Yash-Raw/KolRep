@@ -40,9 +40,8 @@ export function VoiceSettingsForm({
           onChange={(e) => onModelChange(e.target.value)}
           className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-xs font-medium text-neutral-900 dark:text-white focus:outline-hidden"
         >
-          <option value="F5TTS_v1_Base">F5-TTS (Self-Hosted Zero-Shot Local Engine)</option>
-          <option value="eleven_multilingual_v2">Eleven Multilingual v2 (Cloud High Quality)</option>
-          <option value="eleven_turbo_v2_5">Eleven Turbo v2.5 (Cloud Fast / Low Latency)</option>
+          <option value="F5TTS_v1_Base">F5-TTS Base (100% Local Flow Matching DiT)</option>
+          <option value="F5TTS_v1_Fast">F5-TTS Fast (16-Step High Speed)</option>
         </select>
       </div>
 

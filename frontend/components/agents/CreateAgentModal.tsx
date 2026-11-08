@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Bot, Loader2, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { Agent, Voice } from "@/types";
@@ -33,6 +33,20 @@ export function CreateAgentModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const loadVoices = useCallback(async () => {
+    setLoadingVoices(true);
+    try {
+      const res = await api.getVoices();
+      const ready = res.items.filter((v) => v.status === "ready");
+      setVoices(ready);
+      setVoiceId((prev) => (!prev && ready.length > 0 ? ready[0].id : prev));
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to load voices");
+    } finally {
+      setLoadingVoices(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       loadVoices();
@@ -40,25 +54,7 @@ export function CreateAgentModal({
         setVoiceId(initialVoiceId);
       }
     }
-  }, [isOpen, initialVoiceId]);
-
-  const loadVoices = async () => {
-    setLoadingVoices(true);
-    try {
-      const res = await api.getVoices();
-      const ready = res.items.filter((v) => v.status === "ready");
-      setVoices(ready);
-      if (!voiceId && ready.length > 0) {
-        setVoiceId(ready[0].id);
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || "Failed to load voices");
-    } finally {
-      setLoadingVoices(false);
-    }
-  };
-
-  if (!isOpen) return null;
+  }, [isOpen, initialVoiceId, loadVoices]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,6 +91,8 @@ export function CreateAgentModal({
       setIsSubmitting(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
