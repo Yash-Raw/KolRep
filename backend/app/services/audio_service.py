@@ -89,13 +89,13 @@ class AudioService:
 
         warnings: list[str] = []
 
-        # Duration validation
-        if duration < 10.0:
-            warnings.append("Audio sample is shorter than 10 seconds. Voice cloning may sound robotic or inaccurate.")
+        # Duration validation (F5-TTS Diffusion Transformer thrives on prime 6-12s audio)
+        if duration < 5.0:
+            warnings.append("Audio sample is shorter than 5 seconds. Voice cloning may sound inaccurate.")
         elif duration > settings.MAX_AUDIO_DURATION_SECONDS:
             raise ValueError(f"Audio duration ({duration:.1f}s) exceeds maximum allowed limit ({settings.MAX_AUDIO_DURATION_SECONDS}s).")
-        elif duration < 45.0:
-            warnings.append("Sample is under 45 seconds. Best results are achieved with 60 to 120 seconds of speech.")
+        elif settings.VOICE_PROVIDER.lower() == "elevenlabs" and duration < 45.0:
+            warnings.append("Sample is under 45 seconds. Best results with ElevenLabs are achieved with 60 to 120 seconds of speech.")
 
         # Sample rate validation
         if sample_rate < 22050:
@@ -108,22 +108,26 @@ class AudioService:
         if has_clipping:
             warnings.append("Audio clipping / distortion detected. Volume levels may be peaked.")
 
-        if speech_ratio is not None and speech_ratio < 0.4:
+        if speech_ratio is not None and speech_ratio < 0.35:
             warnings.append("High amount of silence or low speech activity detected.")
 
-        # Quality scoring
-        if duration >= 45 and not has_clipping and (speech_ratio is None or speech_ratio >= 0.5) and not warnings:
+        # Quality scoring (calibrated for diffusion-based zero-shot voice cloning)
+        is_self_hosted = settings.VOICE_PROVIDER.lower() == "self_hosted"
+        min_good_dur = 6.0 if is_self_hosted else 45.0
+        min_acc_dur = 5.0 if is_self_hosted else 15.0
+
+        if duration >= min_good_dur and not has_clipping and (speech_ratio is None or speech_ratio >= 0.45) and not warnings:
             quality = "good"
             recommendation = "Suitable for high-quality instant voice cloning"
             is_clonable = True
-        elif duration >= 15 and (not has_clipping or len(warnings) <= 2):
+        elif duration >= min_acc_dur and (not has_clipping or len(warnings) <= 2):
             quality = "acceptable"
-            recommendation = "Acceptable for voice cloning, though longer/cleaner audio is recommended"
+            recommendation = "Acceptable for voice cloning. A clean 6–12s sample is recommended."
             is_clonable = True
         else:
             quality = "poor"
-            recommendation = "Low quality or insufficient speech. Please upload a clearer 60-120s sample."
-            is_clonable = duration >= 10.0
+            recommendation = "Low quality or insufficient speech. Please upload or record a clear 6–12s sample."
+            is_clonable = duration >= 5.0
 
         return AudioQualityReport(
             duration_seconds=round(duration, 2),
