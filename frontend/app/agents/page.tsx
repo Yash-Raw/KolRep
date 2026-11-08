@@ -63,7 +63,12 @@ export default function AgentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">Voice Agents</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">Voice Agents</h1>
+            <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+              Preview (v1.1)
+            </span>
+          </div>
           <p className="text-sm text-neutral-500 mt-1">
             Build and talk with real-time Conversational AI agents speaking with your verified cloned voices.
           </p>
@@ -76,6 +81,14 @@ export default function AgentsPage() {
           <Plus className="h-4 w-4" />
           <span>Create New Agent</span>
         </button>
+      </div>
+
+      {/* v1.1 Milestone Notice */}
+      <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-sm">
+        <Sparkles className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+        <div>
+          <span className="font-semibold">v1.1 Milestone Preview:</span> The full-duplex conversational voice agent engine is queued for the v1.1 release. Instant Voice Cloning and Studio Narration are fully active and 100% self-hosted in v1.0.
+        </div>
       </div>
 
       {error && (

@@ -10,6 +10,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
+import numpy as np
+import soundfile as sf
 import torch
 
 from app.core.config import settings
@@ -67,14 +69,72 @@ def normalize_speech_text(text: str) -> str:
     return t
 
 
+def chunk_text_by_sentence(text: str, max_chars: int = 180) -> list[str]:
+    """
+    Splits text along sentence and clause boundaries (punctuation: . ! ? ; : \n),
+    grouping small clauses together up to max_chars so each chunk is a natural,
+    well-formed prosodic clause suitable for F5-TTS Diffusion Transformer attention windows.
+    """
+    if not text:
+        return []
+    
+    # Split on sentence terminals while keeping punctuation attached
+    raw_sentences = [s.strip() for s in re.split(r'(?<=[.?!;:\n])\s+', text) if s.strip()]
+    if not raw_sentences:
+        return [text]
+
+    chunks: list[str] = []
+    current_chunk = ""
+
+    for s in raw_sentences:
+        if not current_chunk:
+            current_chunk = s
+        elif len(current_chunk) + len(s) + 1 <= max_chars:
+            current_chunk += " " + s
+        else:
+            chunks.append(current_chunk)
+            current_chunk = s
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    # In case any single sentence is longer than max_chars, split on commas or spaces
+    final_chunks: list[str] = []
+    for c in chunks:
+        if len(c) <= max_chars:
+            final_chunks.append(c)
+        else:
+            parts = [p.strip() for p in re.split(r'(?<=[,])\s+', c) if p.strip()]
+            curr_part = ""
+            for p in parts:
+                if not curr_part:
+                    curr_part = p
+                elif len(curr_part) + len(p) + 1 <= max_chars:
+                    curr_part += " " + p
+                else:
+                    final_chunks.append(curr_part)
+                    curr_part = p
+            if curr_part:
+                final_chunks.append(curr_part)
+
+    return final_chunks if final_chunks else [text]
+
+
 class SelfHostedProvider(VoiceProvider):
     def __init__(self) -> None:
         self._engine: Any = None
         self._engine_lock = asyncio.Lock()
+        self._infer_semaphore: Optional[asyncio.Semaphore] = None
         self._asr_pipeline: Any = None
         self._asr_lock = asyncio.Lock()
         self.storage_dir = Path(settings.SELF_HOSTED_VOICE_DIR)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def infer_semaphore(self) -> asyncio.Semaphore:
+        if self._infer_semaphore is None:
+            self._infer_semaphore = asyncio.Semaphore(1)
+        return self._infer_semaphore
 
     def _get_device(self) -> str:
         cfg_dev = settings.SELF_HOSTED_DEVICE.lower()
@@ -265,6 +325,8 @@ class SelfHostedProvider(VoiceProvider):
 
         # 1. Normalize input text
         norm_text = normalize_speech_text(text)
+        if not norm_text:
+            raise ValueError("Input text cannot be empty after normalization.")
 
         # 2. Derive tuned hyperparameters for optimal accuracy
         speed = float(settings_dict.get("speed", 1.0))
@@ -273,29 +335,95 @@ class SelfHostedProvider(VoiceProvider):
         cfg_strength = 1.8 + (similarity * 0.8)
         nfe_steps = max(int(settings.SELF_HOSTED_NFE_STEPS), 36)
 
+        # 3. Phonetic chunking for long sequences (> 180 chars)
+        chunks = chunk_text_by_sentence(norm_text, max_chars=180)
         logger.info(
-            f"Synthesizing '{norm_text[:40]}...' with voice {voice_id} "
+            f"Synthesizing '{norm_text[:40]}...' ({len(chunks)} chunk(s)) with voice {voice_id} "
             f"(speed={speed}, CFG={cfg_strength:.2f}, steps={nfe_steps})..."
         )
 
         out_wav_path = voice_dir / f"temp_gen_{uuid.uuid4().hex}.wav"
+        out_mp3_path = voice_dir / f"temp_gen_{uuid.uuid4().hex}.mp3"
+        temp_chunk_paths: list[Path] = []
+
         try:
-            safe_seed = random.randint(1, 2147483647)
-            engine.infer(
-                ref_file=str(ref_wav),
-                ref_text=ref_text,
-                gen_text=norm_text,
-                speed=speed,
-                cfg_strength=cfg_strength,
-                sway_sampling_coef=-1.0,
-                nfe_step=nfe_steps,
-                remove_silence=True,
-                seed=safe_seed,
-                file_wave=str(out_wav_path),
-            )
+            if len(chunks) <= 1:
+                chunk_text = chunks[0] if chunks else norm_text
+                safe_seed = random.randint(1, 2147483647)
+                res = engine.infer(
+                    ref_file=str(ref_wav),
+                    ref_text=ref_text,
+                    gen_text=chunk_text,
+                    speed=speed,
+                    cfg_strength=cfg_strength,
+                    sway_sampling_coef=-1.0,
+                    nfe_step=nfe_steps,
+                    remove_silence=True,
+                    seed=safe_seed,
+                    file_wave=str(out_wav_path),
+                )
+                if (not out_wav_path.exists() or out_wav_path.stat().st_size == 0) and res and res[0] is not None:
+                    wav_arr = res[0]
+                    if hasattr(wav_arr, "detach"):
+                        wav_arr = wav_arr.detach().cpu().numpy()
+                    if wav_arr.ndim > 1:
+                        wav_arr = wav_arr.squeeze()
+                    sr = res[1] or 24000
+                    sf.write(str(out_wav_path), wav_arr, sr)
+            else:
+                # Multi-chunk sequential inference with silence stitching
+                audio_segments: list[np.ndarray] = []
+                sample_rate = 24000
+
+                for chunk_text in chunks:
+                    chunk_path = voice_dir / f"temp_chunk_{uuid.uuid4().hex}.wav"
+                    temp_chunk_paths.append(chunk_path)
+                    safe_seed = random.randint(1, 2147483647)
+                    res = engine.infer(
+                        ref_file=str(ref_wav),
+                        ref_text=ref_text,
+                        gen_text=chunk_text,
+                        speed=speed,
+                        cfg_strength=cfg_strength,
+                        sway_sampling_coef=-1.0,
+                        nfe_step=nfe_steps,
+                        remove_silence=True,
+                        seed=safe_seed,
+                        file_wave=str(chunk_path),
+                    )
+
+                    seg = None
+                    if res and res[0] is not None:
+                        seg = res[0]
+                        if hasattr(seg, "detach"):
+                            seg = seg.detach().cpu().numpy()
+                        if seg.ndim > 1:
+                            seg = seg.squeeze()
+                        if len(res) > 1 and res[1]:
+                            sample_rate = res[1]
+                    elif chunk_path.exists() and chunk_path.stat().st_size > 0:
+                        seg, sample_rate = sf.read(str(chunk_path))
+                        if seg.ndim > 1:
+                            seg = seg[:, 0]
+
+                    if seg is not None and len(seg) > 0:
+                        audio_segments.append(seg.astype(np.float32))
+
+                if not audio_segments:
+                    raise RuntimeError("Audio synthesis produced no valid audio segments.")
+
+                # Create 150ms natural silence padding between sentences
+                silence_padding = np.zeros(int(sample_rate * 0.15), dtype=np.float32)
+                stitched_audio = []
+                for idx, segment in enumerate(audio_segments):
+                    stitched_audio.append(segment)
+                    if idx < len(audio_segments) - 1:
+                        stitched_audio.append(silence_padding)
+
+                final_wav = np.concatenate(stitched_audio)
+                sf.write(str(out_wav_path), final_wav, sample_rate)
 
             # Convert generated 24kHz WAV to high-fidelity MP3 (256kbps)
-            out_mp3_path = voice_dir / f"temp_gen_{uuid.uuid4().hex}.mp3"
             try:
                 subprocess.run(
                     [
@@ -317,15 +445,17 @@ class SelfHostedProvider(VoiceProvider):
                 logger.warning(f"FFmpeg MP3 conversion fallback to WAV: {e}")
                 with open(out_wav_path, "rb") as f:
                     audio_bytes = f.read()
-            finally:
-                if out_mp3_path.exists():
-                    out_mp3_path.unlink()
 
             return audio_bytes
 
         finally:
             if out_wav_path.exists():
-                out_wav_path.unlink()
+                out_wav_path.unlink(missing_ok=True)
+            if out_mp3_path.exists():
+                out_mp3_path.unlink(missing_ok=True)
+            for cp in temp_chunk_paths:
+                if cp.exists():
+                    cp.unlink(missing_ok=True)
 
     async def synthesize(
         self,
@@ -334,13 +464,14 @@ class SelfHostedProvider(VoiceProvider):
         settings: dict[str, Any],
         model_id: str = "f5_tts",
     ) -> bytes:
-        return await asyncio.to_thread(
-            self._synthesize_sync,
-            voice_id,
-            text,
-            settings,
-            model_id,
-        )
+        async with self.infer_semaphore:
+            return await asyncio.to_thread(
+                self._synthesize_sync,
+                voice_id,
+                text,
+                settings,
+                model_id,
+            )
 
     async def create_agent_session(
         self,

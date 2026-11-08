@@ -28,7 +28,7 @@ export default function StudioPage() {
   const [voices, setVoices] = useState<Voice[]>([]);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>("");
   const [inputText, setInputText] = useState(DEFAULT_SAMPLE_TEXT);
-  const [modelId, setModelId] = useState("eleven_multilingual_v2");
+  const [modelId, setModelId] = useState("F5TTS_v1_Base");
   const [settings, setSettings] = useState<VoiceSettings>({
     stability: 0.5,
     similarity_boost: 0.75,

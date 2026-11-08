@@ -1,5 +1,9 @@
+import asyncio
 from contextlib import asynccontextmanager
+import glob
 import logging
+import os
+from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,11 +17,52 @@ logging.basicConfig(
 logger = logging.getLogger("voicerep.app")
 
 
+def clean_stale_temp_files() -> None:
+    """Safely cleans up orphaned temporary generation chunks and uploads."""
+    try:
+        # 1. Clean up temp files inside voice profiles dir
+        voice_dir = Path(settings.SELF_HOSTED_VOICE_DIR)
+        if voice_dir.exists():
+            for p in voice_dir.glob("**/temp_*"):
+                try:
+                    if p.is_file():
+                        p.unlink(missing_ok=True)
+                except Exception:
+                    pass
+
+        # 2. Clean up /tmp upload temp files
+        for p_str in glob.glob("/tmp/upload_*"):
+            try:
+                os.remove(p_str)
+            except Exception:
+                pass
+    except Exception as e:
+        logger.warning(f"Error cleaning stale temporary files: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting VoiceRep API server...")
+    clean_stale_temp_files()
+
+    # Pre-warm self-hosted engines in the background if configured
+    if settings.VOICE_PROVIDER == "self_hosted":
+        async def _prewarm():
+            try:
+                from app.providers.self_hosted import self_hosted_provider
+                logger.info("Pre-warming Self-Hosted F5-TTS and Whisper engines...")
+                await self_hosted_provider.get_engine()
+                await self_hosted_provider.get_asr_pipeline()
+                logger.info("Self-Hosted neural engines pre-warmed successfully.")
+            except Exception as e:
+                logger.warning(f"Engine pre-warming skipped or deferred: {e}")
+
+        asyncio.create_task(_prewarm())
+
     yield
+
     logger.info("Shutting down VoiceRep API server...")
+    clean_stale_temp_files()
 
 
 app = FastAPI(

@@ -20,12 +20,21 @@ export function AudioPlayer({ src, filename = "voicerep_audio.mp3", autoPlay = f
     const audio = audioRef.current;
     if (!audio) return;
 
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration || 0);
+    const handleTimeUpdate = () => {
+      if (audio.currentTime !== undefined && isFinite(audio.currentTime)) {
+        setCurrentTime(audio.currentTime);
+      }
+    };
+    const updateDuration = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
     const handleEnded = () => setIsPlaying(false);
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("loadedmetadata", updateDuration);
+    audio.addEventListener("durationchange", updateDuration);
     audio.addEventListener("ended", handleEnded);
 
     if (autoPlay) {
@@ -34,7 +43,8 @@ export function AudioPlayer({ src, filename = "voicerep_audio.mp3", autoPlay = f
 
     return () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("loadedmetadata", updateDuration);
+      audio.removeEventListener("durationchange", updateDuration);
       audio.removeEventListener("ended", handleEnded);
     };
   }, [src, autoPlay]);
@@ -54,8 +64,10 @@ export function AudioPlayer({ src, filename = "voicerep_audio.mp3", autoPlay = f
     const audio = audioRef.current;
     if (!audio) return;
     const time = parseFloat(e.target.value);
-    audio.currentTime = time;
-    setCurrentTime(time);
+    if (isFinite(time)) {
+      audio.currentTime = time;
+      setCurrentTime(time);
+    }
   };
 
   const toggleMute = () => {
@@ -66,7 +78,7 @@ export function AudioPlayer({ src, filename = "voicerep_audio.mp3", autoPlay = f
   };
 
   const formatTime = (seconds: number) => {
-    if (!seconds || isNaN(seconds)) return "0:00";
+    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds < 0) return "0:00";
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;

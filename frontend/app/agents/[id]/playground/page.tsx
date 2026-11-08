@@ -44,6 +44,8 @@ export default function AgentPlaygroundPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     loadAgentData();
@@ -117,13 +119,48 @@ export default function AgentPlaygroundPage() {
             conversation_config_override: sessionConfig.session_config.overrides,
           })
         );
+
+        // Start live microphone streaming over WebSocket
+        try {
+          const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+            ? "audio/webm;codecs=opus"
+            : MediaRecorder.isTypeSupported("audio/webm")
+            ? "audio/webm"
+            : "audio/mp4";
+
+          const recorder = new MediaRecorder(stream, { mimeType });
+          mediaRecorderRef.current = recorder;
+
+          recorder.ondataavailable = async (e) => {
+            if (e.data && e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const res = reader.result as string;
+                const base64Audio = res.includes(",") ? res.split(",")[1] : res;
+                if (base64Audio && ws.readyState === WebSocket.OPEN) {
+                  ws.send(
+                    JSON.stringify({
+                      type: "audio_chunk",
+                      data: base64Audio,
+                    })
+                  );
+                }
+              };
+              reader.readAsDataURL(e.data);
+            }
+          };
+
+          // Capture 750ms audio slices for responsive turnaround
+          recorder.start(750);
+        } catch (recErr) {
+          console.warn("MediaRecorder streaming initialization warning:", recErr);
+        }
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === "agent_response") {
-            setAgentState("speaking");
             setTranscripts((prev) => [
               ...prev,
               {
@@ -145,9 +182,45 @@ export default function AgentPlaygroundPage() {
               },
             ]);
           } else if (data.type === "audio") {
-            // Play received audio chunk if needed
-            setAgentState("speaking");
+            // Play received agent voice audio packet through speakers
+            const b64 = data.audio_event?.audio_base_64;
+            if (b64) {
+              try {
+                if (currentAudioRef.current) {
+                  currentAudioRef.current.pause();
+                  currentAudioRef.current = null;
+                }
+                const audioBytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+                const audioBlob = new Blob([audioBytes], { type: "audio/mpeg" });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                currentAudioRef.current = audio;
+                setAgentState("speaking");
+
+                audio.onended = () => {
+                  URL.revokeObjectURL(audioUrl);
+                  currentAudioRef.current = null;
+                  setAgentState("listening");
+                };
+
+                audio.onerror = () => {
+                  URL.revokeObjectURL(audioUrl);
+                  currentAudioRef.current = null;
+                  setAgentState("listening");
+                };
+
+                audio.play().catch(() => {
+                  setAgentState("listening");
+                });
+              } catch (e) {
+                setAgentState("listening");
+              }
+            }
           } else if (data.type === "interruption") {
+            if (currentAudioRef.current) {
+              currentAudioRef.current.pause();
+              currentAudioRef.current = null;
+            }
             setAgentState("listening");
           }
         } catch {
@@ -155,8 +228,8 @@ export default function AgentPlaygroundPage() {
         }
       };
 
-      ws.onerror = (e) => {
-        setErrorMessage("WebSocket connection error. Please verify ElevenLabs agent configuration.");
+      ws.onerror = () => {
+        setErrorMessage("WebSocket connection error. Please verify voice agent configuration.");
         endConversation();
       };
 
@@ -170,6 +243,16 @@ export default function AgentPlaygroundPage() {
   };
 
   const endConversation = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {}
+      mediaRecorderRef.current = null;
+    }
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
     if (socketRef.current) {
       socketRef.current.close();
       socketRef.current = null;
@@ -371,7 +454,12 @@ export default function AgentPlaygroundPage() {
           </div>
 
           <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[11px] text-neutral-400">
-            <span>Powered by ElevenLabs Conversational AI</span>
+            <span>
+              Powered by{" "}
+              {voice?.provider === "self_hosted"
+                ? "VoiceRep Self-Hosted Neural Engine"
+                : "ElevenLabs Conversational AI"}
+            </span>
             <span>Interrupt speaking agent anytime</span>
           </div>
         </div>
