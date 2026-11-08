@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Mic, Play, RotateCcw, Square, UploadCloud, Volume2, X, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { Voice } from "@/types";
@@ -35,18 +35,7 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    return () => {
-      stopRecordingCleanup();
-      if (recordedAudioUrl) {
-        URL.revokeObjectURL(recordedAudioUrl);
-      }
-    };
-  }, [recordedAudioUrl]);
-
-  if (!isOpen) return null;
-
-  const stopRecordingCleanup = () => {
+  const stopRecordingCleanup = useCallback(() => {
     if (recordTimerRef.current) {
       clearInterval(recordTimerRef.current);
       recordTimerRef.current = null;
@@ -59,6 +48,20 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
       streamRef.current = null;
     }
     setIsRecording(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopRecordingCleanup();
+      if (recordedAudioUrl) {
+        URL.revokeObjectURL(recordedAudioUrl);
+      }
+    };
+  }, [recordedAudioUrl, stopRecordingCleanup]);
+
+  const handleClose = () => {
+    stopRecordingCleanup();
+    onClose();
   };
 
   const startRecording = async () => {
@@ -196,7 +199,7 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
 
       const created = await api.createVoice(formData);
       onSuccess(created);
-      onClose();
+      handleClose();
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to clone voice.");
       setStep(2);
@@ -204,6 +207,8 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
       setIsSubmitting(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
@@ -215,7 +220,7 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
             <p className="text-xs text-neutral-500">Step {step} of 3</p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
             <X className="h-5 w-5" />
