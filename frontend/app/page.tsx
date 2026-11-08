@@ -72,7 +72,7 @@ export default function LandingPage() {
                 <ul className="space-y-2.5 pt-2 text-xs text-neutral-600 dark:text-neutral-300">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>Instant streaming synthesis with ElevenLabs V2 models</span>
+                    <span>Instant zero-shot synthesis with 100% local F5-TTS Diffusion models</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />

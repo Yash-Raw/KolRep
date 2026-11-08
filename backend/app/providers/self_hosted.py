@@ -333,7 +333,10 @@ class SelfHostedProvider(VoiceProvider):
         similarity = float(settings_dict.get("similarity_boost", 0.8))
         # Map similarity boost (0.0 - 1.0) to classifier-free guidance (1.8 - 2.6)
         cfg_strength = 1.8 + (similarity * 0.8)
-        nfe_steps = max(int(settings.SELF_HOSTED_NFE_STEPS), 36)
+        if "fast" in (model_id or "").lower():
+            nfe_steps = 16
+        else:
+            nfe_steps = max(int(settings.SELF_HOSTED_NFE_STEPS), 32)
 
         # 3. Phonetic chunking for long sequences (> 180 chars)
         chunks = chunk_text_by_sentence(norm_text, max_chars=180)

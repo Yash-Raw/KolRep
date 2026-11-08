@@ -454,12 +454,7 @@ export default function AgentPlaygroundPage() {
           </div>
 
           <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[11px] text-neutral-400">
-            <span>
-              Powered by{" "}
-              {voice?.provider === "self_hosted"
-                ? "VoiceRep Self-Hosted Neural Engine"
-                : "ElevenLabs Conversational AI"}
-            </span>
+            <span>Powered by VoiceRep Self-Hosted Neural Engine</span>
             <span>Interrupt speaking agent anytime</span>
           </div>
         </div>

@@ -79,7 +79,7 @@ export default function SettingsPage() {
           <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-700 text-xs text-neutral-600 dark:text-neutral-300 space-y-1">
             <p className="font-semibold text-neutral-900 dark:text-white">Revocation Guarantee:</p>
             <p>
-              When you delete a voice in the Voice Library, VoiceRep immediately deletes the remote provider clone from ElevenLabs and terminates all associated conversational agent sessions.
+              When you delete a voice in the Voice Library, VoiceRep immediately deletes the local model weights, acoustic embeddings, and audio profiles from disk and terminates all associated sessions.
             </p>
           </div>
         </div>
