@@ -4,8 +4,13 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AlertCircle,
+  Check,
+  Copy,
   Download,
+  FileAudio,
+  FolderOpen,
   History,
+  Link as LinkIcon,
   Loader2,
   Mic2,
   Play,
@@ -17,6 +22,7 @@ import { api } from "@/lib/api";
 import { Generation, Voice, VoiceSettings } from "@/types";
 import { AudioPlayer } from "@/components/audio/AudioPlayer";
 import { VoiceSettingsForm } from "@/components/studio/VoiceSettingsForm";
+import { copyToClipboard, downloadAudioFile, formatAudioFilename } from "@/lib/download";
 
 const DEFAULT_SAMPLE_TEXT =
   "Welcome to VoiceRep. By replicating verified voices with high precision, you can generate natural sounding studio narration for podcasts, audiobooks, and video voiceovers in seconds.";
@@ -41,6 +47,32 @@ export default function StudioPage() {
   const [history, setHistory] = useState<Generation[]>([]);
   const [loadingVoices, setLoadingVoices] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copiedAction, setCopiedAction] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleCopy = async (text: string, actionKey: string) => {
+    const success = await copyToClipboard(text);
+    if (success) {
+      setCopiedAction(actionKey);
+      setTimeout(() => setCopiedAction(null), 2000);
+    }
+  };
+
+  const handleDownloadItem = async (gen: Generation) => {
+    if (!gen.audio_url || downloadingId) return;
+    setDownloadingId(gen.id);
+    const voiceName = voices.find((v) => v.id === gen.voice_id)?.name;
+    const filename = formatAudioFilename({
+      voiceName,
+      text: gen.input_text,
+      id: gen.id,
+    });
+    try {
+      await downloadAudioFile(gen.audio_url, filename);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   useEffect(() => {
     loadVoicesAndHistory();
@@ -197,27 +229,103 @@ export default function StudioPage() {
           </div>
 
           {/* Active Audio Player Output */}
-          {currentGeneration?.audio_url && (
-            <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <h4 className="font-semibold text-sm text-neutral-900 dark:text-white">Generated Audio</h4>
-                </div>
-                {currentGeneration.duration_seconds && (
-                  <span className="text-xs font-mono text-neutral-500">
-                    Duration: {currentGeneration.duration_seconds.toFixed(1)}s
-                  </span>
-                )}
-              </div>
+          {currentGeneration?.audio_url && (() => {
+            const activeVoice = voices.find((v) => v.id === currentGeneration.voice_id);
+            const formattedFilename = formatAudioFilename({
+              voiceName: activeVoice?.name,
+              text: currentGeneration.input_text,
+              id: currentGeneration.id,
+            });
 
-              <AudioPlayer
-                src={currentGeneration.audio_url}
-                filename={`generation_${currentGeneration.id.slice(0, 8)}.mp3`}
-                autoPlay={true}
-              />
-            </div>
-          )}
+            return (
+              <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <h4 className="font-semibold text-sm text-neutral-900 dark:text-white">Generated Audio</h4>
+                  </div>
+                  {currentGeneration.duration_seconds && (
+                    <span className="text-xs font-mono text-neutral-500">
+                      Duration: {currentGeneration.duration_seconds.toFixed(1)}s
+                    </span>
+                  )}
+                </div>
+
+                <AudioPlayer
+                  src={currentGeneration.audio_url}
+                  filename={formattedFilename}
+                  autoPlay={true}
+                />
+
+                {/* Quick Project Integration Bar */}
+                <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadItem(currentGeneration)}
+                      disabled={downloadingId === currentGeneration.id}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs"
+                      title="Download audio directly to computer"
+                    >
+                      {downloadingId === currentGeneration.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      <span>Download MP3</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(currentGeneration.audio_url || "", `url-${currentGeneration.id}`)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                      title="Copy direct streaming URL for web or APIs"
+                    >
+                      {copiedAction === `url-${currentGeneration.id}` ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-emerald-600 dark:text-emerald-400">URL Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <LinkIcon className="h-3.5 w-3.5" />
+                          <span>Copy Audio URL</span>
+                        </>
+                      )}
+                    </button>
+
+                    {currentGeneration.local_file_path && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(currentGeneration.local_file_path || "", `path-${currentGeneration.id}`)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                        title="Copy absolute Mac file path for video editing, ffmpeg, or code"
+                      >
+                        {copiedAction === `path-${currentGeneration.id}` ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-emerald-600 dark:text-emerald-400">Path Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5" />
+                            <span>Copy Local Path</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {currentGeneration.local_file_path && (
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200/60 dark:border-neutral-800 text-[11px] font-mono text-neutral-600 dark:text-neutral-400">
+                      <FolderOpen className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+                      <span className="truncate select-all">{currentGeneration.local_file_path}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Sidebar: Acoustic Settings & Recent History */}
@@ -255,13 +363,27 @@ export default function StudioPage() {
                     <div className="flex items-center justify-between pt-1 border-t border-neutral-200/40 dark:border-neutral-700/40 text-[11px] text-neutral-500">
                       <span>{item.character_count} chars</span>
                       {item.audio_url && (
-                        <button
-                          onClick={() => setCurrentGeneration(item)}
-                          className="font-medium text-neutral-900 dark:text-white flex items-center gap-1 hover:underline"
-                        >
-                          <Play className="h-3 w-3 fill-current" />
-                          <span>Play</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setCurrentGeneration(item)}
+                            className="font-medium text-neutral-900 dark:text-white flex items-center gap-1 hover:underline"
+                          >
+                            <Play className="h-3 w-3 fill-current" />
+                            <span>Play</span>
+                          </button>
+                          <button
+                            onClick={() => handleDownloadItem(item)}
+                            disabled={downloadingId === item.id}
+                            className="p-1 rounded text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                            title="Download audio"
+                          >
+                            {downloadingId === item.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Download className="h-3 w-3" />
+                            )}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

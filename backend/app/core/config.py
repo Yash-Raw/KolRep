@@ -21,12 +21,6 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/voicerep"
     SYNC_DATABASE_URL: Optional[str] = None
 
-    # Supabase Auth
-    SUPABASE_URL: Optional[str] = None
-    SUPABASE_ANON_KEY: Optional[str] = None
-    SUPABASE_JWKS_URL: Optional[str] = None
-    SUPABASE_JWT_SECRET: Optional[str] = None
-
     # Voice Provider Configuration (100% self-hosted local engine)
     VOICE_PROVIDER: str = "self_hosted"
 

@@ -66,11 +66,40 @@ export interface Generation {
   status: "queued" | "processing" | "completed" | "failed";
   audio_storage_key?: string;
   audio_url?: string;
+  local_file_path?: string;
   character_count: number;
   duration_seconds?: number;
   error_code?: string;
+  is_watermarked?: boolean;
+  watermark_payload?: Record<string, any>;
+  c2pa_manifest?: Record<string, any>;
   created_at: string;
   completed_at?: string;
+}
+
+export interface VerificationReport {
+  is_authentic: boolean;
+  tamper_status: string;
+  confidence_score: number;
+  c2pa_valid: boolean;
+  c2pa_manifest?: Record<string, any>;
+  c2pa_error?: string;
+  acoustic_watermark_detected: boolean;
+  acoustic_payload?: {
+    version: number;
+    timestamp: number;
+    user_hash: string;
+    gen_hash: string;
+    protocol?: string;
+  };
+  is_ai_generated: boolean;
+  model_id?: string;
+  timestamp?: number;
+  created_at_iso?: string;
+  generation_id?: string;
+  user_hash?: string;
+  license?: string;
+  compliance: string[];
 }
 
 export interface Agent {

@@ -11,7 +11,9 @@ from app.models.voice import Voice
 from app.providers import get_voice_provider, self_hosted_provider
 from app.schemas.generation import GenerationCreate
 from app.services.audio_service import audio_service
+from app.services.c2pa_service import c2pa_service
 from app.services.storage_service import storage_service
+from app.services.watermark_service import watermark_service
 
 logger = logging.getLogger("voicerep.studio_service")
 
@@ -78,13 +80,42 @@ class StudioService:
                 model_id=payload.model_id,
             )
 
-            # Save in object storage
-            storage_service.upload_bytes(audio_bytes, storage_key, content_type="audio/mpeg")
+            # 1. Embed imperceptible acoustic watermark (in-band protection)
+            acoustic_payload = None
+            try:
+                watermarked_bytes, acoustic_payload = watermark_service.embed_watermark_in_bytes(
+                    audio_bytes=audio_bytes,
+                    owner_id=str(owner_id),
+                    generation_id=str(gen_id),
+                    is_mp3=True,
+                )
+            except Exception as wm_err:
+                logger.warning(f"Acoustic watermarking fallback: {wm_err}")
+                watermarked_bytes = audio_bytes
+
+            # 2. Cryptographically sign C2PA manifest & embed into media container (out-of-band provenance)
+            signed_envelope = None
+            try:
+                protected_audio_bytes, signed_envelope = c2pa_service.sign_and_embed(
+                    audio_bytes=watermarked_bytes,
+                    generation_id=str(gen_id),
+                    owner_id=str(owner_id),
+                    voice_id=str(voice.id),
+                    model_id=payload.model_id,
+                    acoustic_payload=acoustic_payload,
+                    is_mp3=True,
+                )
+            except Exception as c2pa_err:
+                logger.warning(f"C2PA manifest embedding fallback: {c2pa_err}")
+                protected_audio_bytes = watermarked_bytes
+
+            # Save protected audio in object storage
+            storage_service.upload_bytes(protected_audio_bytes, storage_key, content_type="audio/mpeg")
 
             # Measure audio duration
             temp_path = f"/tmp/{gen_id}.mp3"
             with open(temp_path, "wb") as f:
-                f.write(audio_bytes)
+                f.write(protected_audio_bytes)
             try:
                 info = audio_service.probe_file(temp_path)
                 dur = float(info.get("format", {}).get("duration", 0.0))
@@ -97,6 +128,9 @@ class StudioService:
             generation.status = "completed"
             generation.audio_storage_key = storage_key
             generation.duration_seconds = dur
+            generation.is_watermarked = bool(acoustic_payload is not None)
+            generation.watermark_payload = acoustic_payload
+            generation.c2pa_manifest = signed_envelope.get("manifest") if signed_envelope else None
             generation.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
         except Exception as e:

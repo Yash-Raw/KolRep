@@ -100,6 +100,27 @@ class StorageService:
             shutil.copyfile(local_file_path, dest)
         return object_key
 
+    def get_local_path(self, object_key: str) -> Optional[str]:
+        """Returns the absolute filesystem path for local storage mode if available."""
+        if self.is_r2_configured:
+            return None
+
+        # Check default path
+        direct = os.path.abspath(os.path.join(self.local_path, object_key))
+        if os.path.exists(direct):
+            return direct
+
+        # Check alternate relative directory locations (e.g. workspace root vs backend/)
+        alt1 = os.path.abspath(os.path.join(self.local_path, "..", "storage", object_key))
+        if os.path.exists(alt1):
+            return alt1
+
+        alt2 = os.path.abspath(os.path.join(self.local_path, "backend", "storage", object_key))
+        if os.path.exists(alt2):
+            return alt2
+
+        return direct
+
     def get_local_path_or_download(self, object_key: str, temp_dir: str = "/tmp") -> str:
         if not self.is_r2_configured:
             local = os.path.join(self.local_path, object_key)

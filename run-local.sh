@@ -14,6 +14,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
 # 1. Environment & Python Resolution
+export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
 CONDA_VOICEREP="/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin"
 if [ -d "$CONDA_VOICEREP" ]; then
     export PATH="$CONDA_VOICEREP:$PATH"

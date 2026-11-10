@@ -49,7 +49,16 @@ async def test_generation_flow(client, ready_voice):
         assert data["status"] == "completed"
         assert data["character_count"] == len(payload["input_text"])
         assert data["audio_url"] is not None
+        assert data.get("local_file_path") is not None
         gen_id = data["id"]
+
+        # Verify direct storage download endpoint with attachment header
+        storage_key = data["audio_storage_key"]
+        download_res = await client.get(
+            f"/api/v1/storage/download/{storage_key}?download=true&filename=test_out.mp3"
+        )
+        assert download_res.status_code == 200
+        assert 'attachment; filename="test_out.mp3"' in download_res.headers.get("content-disposition", "")
 
         # Verify list
         list_res = await client.get("/api/v1/generations")

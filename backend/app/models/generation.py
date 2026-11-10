@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Any, Optional
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.base import Base, CompatibleJSON, GUID, utc_now
 
@@ -21,6 +21,9 @@ class Generation(Base):
     character_count: Mapped[int] = mapped_column(Integer, nullable=False)
     duration_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     error_code: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    is_watermarked: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    watermark_payload: Mapped[Optional[dict[str, Any]]] = mapped_column(CompatibleJSON(), nullable=True)
+    c2pa_manifest: Mapped[Optional[dict[str, Any]]] = mapped_column(CompatibleJSON(), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 

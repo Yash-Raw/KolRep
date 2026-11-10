@@ -2,10 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, Download, History, Loader2, Play, Sparkles, Trash2, Volume2 } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  Copy,
+  Download,
+  FolderOpen,
+  History,
+  Link as LinkIcon,
+  Loader2,
+  Play,
+  Sparkles,
+  Trash2,
+  Volume2,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { Generation, Voice } from "@/types";
 import { AudioPlayer } from "@/components/audio/AudioPlayer";
+import { copyToClipboard, downloadAudioFile, formatAudioFilename } from "@/lib/download";
 
 export default function HistoryPage() {
   const [generations, setGenerations] = useState<Generation[]>([]);
@@ -13,6 +27,31 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeAudioUrl, setActiveAudioUrl] = useState<string | null>(null);
+  const [copiedAction, setCopiedAction] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (gen: Generation) => {
+    if (!gen.audio_url || downloadingId) return;
+    setDownloadingId(gen.id);
+    const filename = formatAudioFilename({
+      voiceName: voices[gen.voice_id],
+      text: gen.input_text,
+      id: gen.id,
+    });
+    try {
+      await downloadAudioFile(gen.audio_url, filename);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleCopy = async (text: string, actionKey: string) => {
+    const success = await copyToClipboard(text);
+    if (success) {
+      setCopiedAction(actionKey);
+      setTimeout(() => setCopiedAction(null), 2000);
+    }
+  };
 
   useEffect(() => {
     loadHistory();
@@ -141,29 +180,67 @@ export default function HistoryPage() {
                   <p className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2">
                     {gen.input_text}
                   </p>
+
+                  {gen.local_file_path && (
+                    <div className="flex items-center gap-1.5 pt-0.5 text-[11px] font-mono text-neutral-400 dark:text-neutral-500">
+                      <FolderOpen className="h-3 w-3 shrink-0" />
+                      <span className="truncate max-w-lg select-all">{gen.local_file_path}</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   {gen.audio_url && (
                     <>
                       <button
                         onClick={() => setActiveAudioUrl(gen.audio_url || null)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-medium hover:bg-neutral-800 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-medium hover:bg-neutral-800 transition-colors shadow-xs"
                       >
                         <Play className="h-3 w-3 fill-current" />
                         <span>Play</span>
                       </button>
 
-                      <a
-                        href={gen.audio_url}
-                        download={`generation_${gen.id.slice(0, 8)}.mp3`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                        title="Download audio file"
+                      <button
+                        type="button"
+                        onClick={() => handleDownload(gen)}
+                        disabled={downloadingId === gen.id}
+                        className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                        title="Download MP3 directly to your computer"
                       >
-                        <Download className="h-4 w-4" />
-                      </a>
+                        {downloadingId === gen.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-neutral-900 dark:text-white" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(gen.audio_url || "", `url-${gen.id}`)}
+                        className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                        title="Copy direct audio URL"
+                      >
+                        {copiedAction === `url-${gen.id}` ? (
+                          <Check className="h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <LinkIcon className="h-4 w-4" />
+                        )}
+                      </button>
+
+                      {gen.local_file_path && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(gen.local_file_path || "", `path-${gen.id}`)}
+                          className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                          title="Copy local Mac path"
+                        >
+                          {copiedAction === `path-${gen.id}` ? (
+                            <Check className="h-4 w-4 text-emerald-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
                     </>
                   )}
 

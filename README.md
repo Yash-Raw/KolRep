@@ -4,11 +4,15 @@
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-green.svg)](https://python.org)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org)
 [![PyTorch MPS/CUDA](https://img.shields.io/badge/PyTorch-MPS%20%7C%20CUDA-red.svg)](https://pytorch.org)
+[![C2PA Cryptographic Provenance](https://img.shields.io/badge/C2PA-Provenance%20Signed-emerald.svg)](https://c2pa.org)
+[![EU AI Act Article 50](https://img.shields.io/badge/EU_AI_Act-Art._50_Compliant-blue.svg)]()
 [![Cloud Cost: $0.00](https://img.shields.io/badge/Cloud_Cost-$0.00-brightgreen.svg)]()
 
-> **Clone an authorized voice locally in seconds. Power high-fidelity studio narration with zero cloud costs and 100% privacy.**
+> **Clone an authorized voice locally in seconds. Power high-fidelity studio narration with dual-layer C2PA cryptographic watermarking, zero cloud costs, and 100% privacy.**
 
 VoiceRep is an enterprise-grade, open-source AI voice platform engineered for **100% local, self-hosted execution**. Built on modern **Conditional Flow Matching Diffusion Transformers (F5-TTS DiT)** and **Whisper ASR**, VoiceRep requires zero external APIs, zero credit cards, and zero cloud bills.
+
+Every generated waveform embeds **Dual-Layer Deepfake Protection**: an in-band imperceptible acoustic watermark surviving lossy compression, and an out-of-band X.509 digitally signed C2PA provenance manifest conforming to **EU AI Act Article 50** and **US Executive Order 14110**.
 
 ---
 
@@ -32,6 +36,14 @@ VoiceRep is an enterprise-grade, open-source AI voice platform engineered for **
                     │              │              │
                     └──────────────┼──────────────┘
                                    │
+                    Dual-Layer Deepfake Protection
+                    ┌──────────────┴──────────────┐
+                    ▼                             ▼
+         In-Band Acoustic Watermark     C2PA Manifest Signing
+         (QIM HAS Psychoacoustic)      (X.509 ECDSA P-256)
+                    │                             │
+                    └──────────────┬──────────────┘
+                                   │
                          Shared Voice Library
                                    │
                    ┌───────────────┼───────────────┐
@@ -50,7 +62,9 @@ VoiceRep is an enterprise-grade, open-source AI voice platform engineered for **
 | **Backend** | Python 3.11, FastAPI, Pydantic v2, Uvicorn |
 | **Voice Cloning Engine** | F5-TTS Base (`F5TTS_v1_Base`) Conditional Flow Matching DiT |
 | **Acoustic Alignment** | OpenAI Whisper (`whisper-tiny` / `whisper-base`) for phoneme text-audio alignment |
-| **Audio Processing** | FFmpeg 9.0.2 (`silencedetect`, `volumedetect`), SoundFile, Librosa |
+| **In-Band Watermarking** | Quantization Index Modulation (QIM), Human Auditory System formant masking (2.5 kHz), Barker-16 sync, CRC-16 |
+| **Provenance Signing** | C2PA specification, X.509 ECDSA (SECP256R1), ID3v2 `GEOB` / RIFF `c2pa` encapsulation |
+| **Audio Processing** | FFmpeg 9.0.2 (`silencedetect`, `volumedetect`), SoundFile, Librosa, SciPy FFT |
 | **Hardware Acceleration** | Apple Silicon (`mps`), NVIDIA CUDA (`cuda`), CPU fallback |
 | **Database & Cache** | PostgreSQL 16, SQLAlchemy 2.0 (async), Alembic, Redis 7 + ARQ |
 | **Storage** | 100% Local filesystem (`./storage`) with directory traversal protection |
@@ -68,6 +82,10 @@ VoiceRep is an enterprise-grade, open-source AI voice platform engineered for **
 | **Cloning Method** | Zero-Shot Flow Matching DiT | Multi-engine (F5, Cosy, Melo) | Proprietary Closed Weights |
 | **In-Browser Recording** | **Native 10s Mic Recorder** | External file import | Cloud recorder |
 | **Long-Text Narration** | **Phonetic Sentence Chunker** | Single pass | Cloud streaming |
+| **Acoustic Watermarking** | **In-Band QIM (SNR > 40dB)** | None | Proprietary closed API |
+| **C2PA Provenance Signing**| **X.509 ECDSA Container Signing**| None | Proprietary closed tags |
+| **Regulatory Compliance** | **EU AI Act Art. 50 & US EO 14110** | None | Closed proprietary |
+| **Public Verifier UI** | **Included (`/verify`)** | None | None |
 | **License** | **AGPL-3.0** | GPL-3.0 | Proprietary |
 
 ---
@@ -90,6 +108,7 @@ chmod +x run-local.sh
 
 The script automatically detects hardware acceleration (`mps` / `cuda`), runs database migrations, and boots:
 - **Web App:** [http://localhost:3000](http://localhost:3000)
+- **Deepfake Verifier:** [http://localhost:3000/verify](http://localhost:3000/verify)
 - **FastAPI API & Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ---
@@ -120,11 +139,34 @@ Services started:
 ### 2. High-Fidelity Voice Studio
 - **Phonetic Sentence Chunker**: Synthesizes long paragraphs without audio truncation or ODE solver hallucination.
 - **Acoustic Sliders**: Customize speaking tempo (0.5x–2.0x), similarity boost, and stability.
-- **Waveform Player**: Custom scrubbable audio player with HTTP 206 byte-range seeking and instant MP3 export.
+- **Waveform Player**: Custom scrubbable audio player with HTTP 206 byte-range seeking, instant MP3 export, and C2PA trust indicators.
 - **Generation History**: Comprehensive log of past generations with direct playback.
 
-### 3. Voice Agents (v1.1 Milestone)
+### 3. C2PA Cryptographic Watermarking & Deepfake Protection
+- **Layer 1: In-Band Acoustic Watermark (Waveform Frequency)**:
+  - Embeds an inaudible 136-bit cryptographic payload (timestamp, user ID hash, generation UUID hash, CRC-16 checksum) directly into the waveform.
+  - Achieves studio transparency (**SNR > 40 dB**).
+  - Survives MP3 256k/128k compression, transcoding, level normalization, and metadata stripping.
+- **Layer 2: C2PA Manifest & X.509 ECDSA Signing (Container Level)**:
+  - Generates standard C2PA manifests recording creation actions, generative AI model assertions, and SHA-256 hash binding.
+  - Digitally signed with platform X.509 ECDSA P-256 certificates.
+  - Embedded in ID3v2 `GEOB` frame (`application/c2pa`) for MP3 and RIFF `c2pa` chunk for WAV.
+- **Public Authenticity Inspector (`/verify`)**:
+  - Anyone can drag & drop an audio file into the web inspector to extract hidden acoustic watermarks and verify C2PA signatures.
+  - Downloadable `.c2pa` manifest sidecars and public X.509 authority certificates.
+
+### 4. Voice Agents (v1.1 Milestone)
 - The conversational full-duplex agent module is scheduled for the v1.1 milestone. Database models and WebSocket foundations are in place.
+
+---
+
+## 🛡️ Verification Endpoints & API
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/v1/verify` | Upload audio to analyze Layer 1 C2PA and Layer 2 acoustic watermark |
+| `GET` | `/api/v1/verify/certificate/{generation_id}` | Retrieve cryptographic provenance certificate for a generation |
+| `GET` | `/api/v1/verify/public-key` | Download VoiceRep platform X.509 signing certificate (PEM) |
 
 ---
 
@@ -148,6 +190,8 @@ pytest -v
 ```
 
 Tests verify:
+- Dual-layer C2PA manifest signing, X.509 verification, and tamper detection
+- Acoustic watermark embedding, high SNR transparency (>40dB), and CRC-16 validation
 - Safe concurrent inference under `asyncio.Semaphore(1)` barrier
 - Phonetic chunking and audio stitching for long text (>180 chars)
 - Path traversal protection on local storage (`403 Forbidden` on `../../`)

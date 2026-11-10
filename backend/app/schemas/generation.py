@@ -28,9 +28,13 @@ class GenerationResponse(BaseModel):
     status: str
     audio_storage_key: Optional[str] = None
     audio_url: Optional[str] = None
+    local_file_path: Optional[str] = None
     character_count: int
     duration_seconds: Optional[float] = None
     error_code: Optional[str] = None
+    is_watermarked: bool = True
+    watermark_payload: Optional[dict[str, Any]] = None
+    c2pa_manifest: Optional[dict[str, Any]] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
 
