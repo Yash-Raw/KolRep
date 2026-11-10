@@ -1,165 +1,20 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  Bot,
-  CheckCircle2,
-  Lock,
-  Mic2,
-  ShieldCheck,
-  Sparkles,
-  Volume2,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight, AudioLines } from "lucide-react";
+import { SignalArt } from "@/components/ui/SignalArt";
 
 export default function LandingPage() {
-  return (
-    <div className="flex-1 flex flex-col justify-between">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-20 pb-16 md:pt-32 md:pb-24">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs font-medium text-neutral-600 dark:text-neutral-400 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>100% On-Device Voice Cloning & Conversational Agents</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white max-w-4xl mx-auto leading-tight">
-            Clone your voice once. <br className="hidden sm:inline" />
-            <span className="text-neutral-500 dark:text-neutral-400">Power both Studio narration and interactive AI agents.</span>
-          </h1>
-
-          <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed">
-            VoiceRep turns an authorized 60-second voice sample into a reusable synthetic profile. Generate long-form narration in seconds or hold live, real-time voice conversations with zero setup friction.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link
-              href="/dashboard"
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 font-medium text-sm hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 group"
-            >
-              <span>Get Started</span>
-              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-            <Link
-              href="/voices"
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-medium text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors shadow-xs"
-            >
-              View Voice Library
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Two Pillars Section */}
-      <section className="py-16 border-y border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">One Shared Acoustic Profile, Two Core Modes</h2>
-            <p className="text-sm text-neutral-500 mt-2">Never train or clone separate models for speech and chat.</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Pillar A: Studio */}
-            <div className="p-8 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center shadow-xs">
-                  <Sparkles className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-bold text-neutral-900 dark:text-white">Module A: Voice Studio</h3>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                  High-fidelity text-to-speech generation. Control stability, similarity boost, speaking tempo, and vocal expressiveness. Export pristine studio-ready audio files.
-                </p>
-
-                <ul className="space-y-2.5 pt-2 text-xs text-neutral-600 dark:text-neutral-300">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>Instant zero-shot synthesis with 100% local F5-TTS Diffusion models</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>Fine-grained acoustic stability & similarity controls</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>Audio waveform playback, seeking, and direct download</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="pt-8">
-                <Link
-                  href="/studio"
-                  className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-900 dark:text-white hover:underline"
-                >
-                  <span>Explore Voice Studio</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Pillar B: Agents */}
-            <div className="p-8 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center shadow-xs">
-                  <Bot className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-bold text-neutral-900 dark:text-white">Module B: Conversational Agents</h3>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                  Build interactive AI voice agents that speak with your cloned voice. Real-time microphone audio input, full turn detection, live conversational transcripts, and agent interruption.
-                </p>
-
-                <ul className="space-y-2.5 pt-2 text-xs text-neutral-600 dark:text-neutral-300">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>Ultra-low latency WebSocket conversational protocol</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>Per-agent system instruction & greeting overrides</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>Natural speech interruption and turn management</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="pt-8">
-                <Link
-                  href="/agents"
-                  className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-900 dark:text-white hover:underline"
-                >
-                  <span>Explore Voice Agents</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Safety & Compliance */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <div className="h-12 w-12 mx-auto rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-900 dark:text-white">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <h3 className="text-xl font-bold text-neutral-900 dark:text-white">Strict Voice Authorization & Consent</h3>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto leading-relaxed">
-            VoiceRep requires affirmative speaker consent before any voice profile is generated. Audio samples are validated for quality and speech ratio, encrypted at rest, and subject to immediate revocation.
-          </p>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-neutral-200 dark:border-neutral-800 py-8 bg-white dark:bg-neutral-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500">
-          <div className="flex items-center gap-2 font-medium text-neutral-900 dark:text-white">
-            <Mic2 className="h-4 w-4" />
-            <span>VoiceRep Platform</span>
-          </div>
-          <p>© {new Date().getFullYear()} VoiceRep Inc. All rights reserved.</p>
-        </div>
-      </footer>
-    </div>
-  );
+  return <div className="landing">
+    <section className="broadcast-hero">
+      <div className="broadcast-kicker"><p className="eyebrow">INDEPENDENT VOICE PRODUCTION</p><p className="eyebrow">RECORDED BY YOU. REIMAGINED BY VOICEREP.</p></div>
+      <h1 className="headline-enter">A voice of<br /><span>your own.</span></h1>
+      <div className="broadcast-intro"><p>Your voice has a character. Keep it.<br />Create expressive narration from an authorized recording, in a studio that runs on your own device.</p><div className="flex flex-wrap gap-3"><Link href="/dashboard" className="btn btn-primary">Enter the workspace <ArrowUpRight size={17} /></Link><Link href="/voices" className="btn btn-secondary">Explore your voices <ArrowRight size={16} /></Link></div></div>
+      <div className="broadcast-art"><span className="broadcast-art-label">FIG. 01 / THE HUMAN SIGNAL</span><span className="broadcast-art-number" aria-hidden="true">VR—01</span><SignalArt /><div className="broadcast-art-bottom"><span>ORIGINAL VOICE. NEW POSSIBILITIES.</span><span>100% LOCAL</span></div></div>
+    </section>
+    <section className="broadcast-process"><div className="broadcast-section-header"><p className="eyebrow">A SIMPLE PRODUCTION PROCESS<br />01 — 03</p><h2>From a recording.<br />To something worth hearing.</h2></div><div className="broadcast-steps">
+      <article className="broadcast-step"><p className="eyebrow">01 / THE SOURCE</p><h3>Start with your voice.</h3><p>Record or upload an authorized voice sample. Create a profile you can return to, again and again.</p><Link href="/voices" className="text-link">Build your voice library <ArrowUpRight size={16} /></Link></article>
+      <article className="broadcast-step"><p className="eyebrow">02 / THE SESSION</p><h3>Give the script a life.</h3><p>Bring your words into the studio. Adjust the delivery, generate your narration, and listen back.</p><Link href="/studio" className="text-link">Take it to the studio <ArrowUpRight size={16} /></Link></article>
+      <article className="broadcast-step"><p className="eyebrow">03 / THE RECORD</p><h3>Keep the story clear.</h3><p>Inspect audio for signed provenance and acoustic watermarks using the built-in verification tools.</p><Link href="/verify" className="text-link">Inspect an audio file <ArrowUpRight size={16} /></Link></article>
+    </div></section>
+    <footer className="broadcast-footer"><div className="broadcast-footer-top"><Link href="/" className="brand"><AudioLines size={28} />VoiceRep</Link><div className="broadcast-footer-links"><Link href="/dashboard">Workspace</Link><Link href="/history">Recording history</Link><Link href="/agents">Voice agents · Preview</Link><Link href="/verify">Verify audio</Link></div></div><div className="broadcast-footer-bottom"><span>YOUR DEVICE. YOUR VOICE.</span><span>© {new Date().getFullYear()} VOICEREP</span></div></footer>
+  </div>;
 }

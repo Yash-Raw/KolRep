@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, Bot, Loader2, Plus, Sparkles } from "lucide-react";
+import { PageHeader } from "@/components/ui/StudioUI";
 import { api } from "@/lib/api";
 import { Agent, Voice } from "@/types";
 import { AgentCard } from "@/components/agents/AgentCard";
@@ -59,32 +60,11 @@ export default function AgentsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">Voice Agents</h1>
-            <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-              Preview (v1.1)
-            </span>
-          </div>
-          <p className="text-sm text-neutral-500 mt-1">
-            Build and talk with real-time Conversational AI agents speaking with your verified cloned voices.
-          </p>
-        </div>
-
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Create New Agent</span>
-        </button>
-      </div>
+    <div className="page agents-page">
+      <PageHeader number="04" label="Conversational tools" title="Voice agents" description="Give your voice a new role. Configure agents with your existing voice profiles." actions={<button onClick={() => setIsModalOpen(true)} className="btn btn-primary"><Plus size={16} />Create an agent</button>} />
 
       {/* v1.1 Milestone Notice */}
-      <div className="flex items-center gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-sm">
+      <div className="flex items-center gap-3 mb-6 p-4 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-sm">
         <Sparkles className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
         <div>
           <span className="font-semibold">v1.1 Milestone Preview:</span> The full-duplex conversational voice agent engine is queued for the v1.1 release. Instant Voice Cloning and Studio Narration are fully active and 100% self-hosted in v1.0.
@@ -92,7 +72,7 @@ export default function AgentsPage() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+        <div className="flex items-center gap-2 p-4 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -101,30 +81,30 @@ export default function AgentsPage() {
       {/* Grid or Empty State */}
       {loading ? (
         <div className="py-24 text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-neutral-400" />
-          <p className="text-sm text-neutral-500">Loading your voice agents...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted" />
+          <p className="text-sm text-muted">Loading your voice agents...</p>
         </div>
       ) : agents.length === 0 ? (
-        <div className="py-20 text-center border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl p-8 space-y-4">
-          <div className="h-12 w-12 rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 flex items-center justify-center mx-auto">
+        <div className="empty-state">
+          <div className="h-12 w-12 rounded-lg bg-soft  text-muted  flex items-center justify-center mx-auto">
             <Bot className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="font-semibold text-base text-neutral-900 dark:text-white">No agents created yet</h3>
-            <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1">
+            <h3 className="font-semibold text-base text-ink ">No agents created yet</h3>
+            <p className="text-xs text-muted max-w-sm mx-auto mt-1">
               Select one of your cloned voices, give your agent instructions, and talk to it in real time.
             </p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent  text-white  text-xs font-medium hover:bg-soft  transition-colors "
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Create First Agent</span>
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="library-grid">
           {agents.map((agent) => (
             <AgentCard
               key={agent.id}

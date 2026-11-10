@@ -14,14 +14,14 @@ export default function LoginPage() {
 
   return (
     <div className="flex-1 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-8 shadow-xl text-center space-y-4">
-        <div className="h-12 w-12 rounded-2xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center mx-auto shadow-sm">
+      <div className="panel w-full max-w-sm p-8 text-center space-y-4"><p className="eyebrow">VOICEREP / LOCAL WORKSPACE</p>
+        <div className="h-12 w-12 rounded-lg bg-accent  text-white  flex items-center justify-center mx-auto ">
           <Laptop className="h-6 w-6 text-emerald-500" />
         </div>
-        <h2 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">
+        <h2 className="text-xl font-bold tracking-tight text-ink ">
           Pure Local Mode
         </h2>
-        <p className="text-xs text-neutral-500 leading-relaxed">
+        <p className="text-xs text-muted leading-relaxed">
           VoiceRep runs completely on your local workstation. No cloud account or sign-in is required. Redirecting to your dashboard...
         </p>
         <div className="flex items-center justify-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium pt-2">
