@@ -41,3 +41,4 @@ backend/storage/
 frontend/.env.local
 backend/.env
 VoiceRep-master build specification.md
+docs/
