@@ -3,17 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  AlertCircle,
-  ArrowLeft,
-  Bot,
-  Mic,
-  MicOff,
-  PhoneCall,
-  PhoneOff,
-  Volume2,
-  Waves,
-} from "lucide-react";
+import { AlertCircle, ArrowLeft, Bot, Mic, MicOff, PhoneCall, PhoneOff, Volume2, Waves } from "lucide-react";
+import { PageHeader } from "@/components/ui/StudioUI";
 import { api } from "@/lib/api";
 import { Agent, AgentSessionConfig, Voice } from "@/types";
 
@@ -315,7 +306,7 @@ export default function AgentPlaygroundPage() {
         );
       default:
         return (
-          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-soft  text-muted ">
             <span className="w-2 h-2 rounded-full bg-neutral-400"></span>
             Ready to call
           </span>
@@ -324,35 +315,36 @@ export default function AgentPlaygroundPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-6">
+    <div className="page playground-page space-y-6">
       {/* Top Bar */}
       <div className="flex items-center justify-between">
         <Link
           href="/agents"
-          className="inline-flex items-center gap-2 text-xs font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-medium text-muted hover:text-ink  transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Agents</span>
         </Link>
 
         {agentState !== "disconnected" && (
-          <div className="font-mono text-xs px-3 py-1 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300">
+          <div className="font-mono text-xs px-3 py-1 rounded-full border border-line  bg-paper  text-muted ">
             Call Duration: {formatDuration(callDuration)}
           </div>
         )}
       </div>
 
       {errorMessage && (
-        <div className="flex items-center gap-2 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+        <div className="flex items-center gap-2 p-4 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
+      <PageHeader number="04" label="Agent playground" title={agent?.name || "Agent playground"} description="Your voice agent console. Start a conversation and follow the transcript." />
       {/* Main Conversation Container */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Agent Profile & Interactive Call Card */}
-        <div className="p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm flex flex-col justify-between space-y-8">
+        <div className="playground-console panel p-6 flex flex-col justify-between space-y-8">
           <div className="space-y-6 text-center">
             {/* Visual Call Orb */}
             <div className="relative mx-auto w-32 h-32 flex items-center justify-center">
@@ -362,20 +354,20 @@ export default function AgentPlaygroundPage() {
                     ? "bg-purple-500/20 scale-125 animate-ping"
                     : agentState === "listening"
                     ? "bg-emerald-500/20 scale-110 animate-pulse"
-                    : "bg-neutral-100 dark:bg-neutral-800"
+                    : "bg-soft "
                 }`}
               ></div>
-              <div className="relative z-10 w-24 h-24 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center shadow-lg">
+              <div className="relative z-10 w-24 h-24 rounded-full bg-accent  text-white  flex items-center justify-center ">
                 <Bot className="h-10 w-10" />
               </div>
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-neutral-900 dark:text-white">
+              <h2 className="text-xl font-bold text-ink ">
                 {agent?.name || "AI Voice Agent"}
               </h2>
-              <p className="text-xs text-neutral-500 mt-1">
-                Speaking with: <span className="font-semibold text-neutral-800 dark:text-neutral-200">{voice?.name || "Cloned Voice"}</span>
+              <p className="text-xs text-muted mt-1">
+                Speaking with: <span className="font-semibold text-ink ">{voice?.name || "Cloned Voice"}</span>
               </p>
             </div>
 
@@ -383,11 +375,11 @@ export default function AgentPlaygroundPage() {
           </div>
 
           {/* Call Controls */}
-          <div className="space-y-3 pt-6 border-t border-neutral-100 dark:border-neutral-800">
+          <div className="space-y-3 pt-6 border-t border-line ">
             {agentState === "disconnected" ? (
               <button
                 onClick={startConversation}
-                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2.5 active:scale-98"
+                className="w-full py-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-all   flex items-center justify-center gap-2.5 active:scale-98"
               >
                 <PhoneCall className="h-4 w-4" />
                 <span>Start Voice Conversation</span>
@@ -397,10 +389,10 @@ export default function AgentPlaygroundPage() {
                 <button
                   onClick={toggleMute}
                   title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
-                  className={`p-3.5 rounded-2xl border transition-all ${
+                  className={`p-3.5 rounded-lg border transition-all ${
                     isMuted
                       ? "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800 text-red-600"
-                      : "bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300"
+                      : "bg-soft  border-line  text-ink "
                   }`}
                 >
                   {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
@@ -408,7 +400,7 @@ export default function AgentPlaygroundPage() {
 
                 <button
                   onClick={endConversation}
-                  className="flex-1 py-3.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all shadow-md flex items-center justify-center gap-2.5 active:scale-98"
+                  className="flex-1 py-3.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-all  flex items-center justify-center gap-2.5 active:scale-98"
                 >
                   <PhoneOff className="h-4 w-4" />
                   <span>End Conversation</span>
@@ -419,18 +411,18 @@ export default function AgentPlaygroundPage() {
         </div>
 
         {/* Right: Live Transcript Stream */}
-        <div className="lg:col-span-2 p-6 rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm flex flex-col justify-between h-[520px]">
-          <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800">
-            <h3 className="font-semibold text-sm text-neutral-900 dark:text-white">Live Conversation Transcript</h3>
-            <span className="text-xs text-neutral-400">Real-time turn stream</span>
+        <div className="playground-transcript panel lg:col-span-2 p-6 flex flex-col justify-between h-[520px]">
+          <div className="flex items-center justify-between pb-3 border-b border-line ">
+            <h3 className="font-semibold text-sm text-ink ">Live Conversation Transcript</h3>
+            <span className="text-xs text-muted">Real-time turn stream</span>
           </div>
 
           <div className="flex-1 overflow-y-auto py-4 space-y-4">
             {transcripts.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center text-neutral-400 space-y-2">
+              <div className="h-full flex flex-col items-center justify-center text-center text-muted space-y-2">
                 <Waves className="h-8 w-8 stroke-1" />
                 <p className="text-xs">Start a conversation and speak into your microphone.</p>
-                <p className="text-[11px] text-neutral-500">Transcripts will stream here in real time.</p>
+                <p className="text-[11px] text-muted">Transcripts will stream here in real time.</p>
               </div>
             ) : (
               transcripts.map((msg) => (
@@ -439,21 +431,21 @@ export default function AgentPlaygroundPage() {
                   className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-xs ${
+                    className={`max-w-[85%] rounded-lg px-4 py-3 text-xs leading-relaxed  ${
                       msg.sender === "user"
-                        ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-tr-xs"
-                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white rounded-tl-xs"
+                        ? "bg-accent  text-white  rounded-tr-xs"
+                        : "bg-soft  text-ink  rounded-tl-xs"
                     }`}
                   >
                     <p>{msg.text}</p>
                   </div>
-                  <span className="text-[10px] text-neutral-400 mt-1 px-1">{msg.time}</span>
+                  <span className="text-[10px] text-muted mt-1 px-1">{msg.time}</span>
                 </div>
               ))
             )}
           </div>
 
-          <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-[11px] text-neutral-400">
+          <div className="pt-3 border-t border-line  flex items-center justify-between text-[11px] text-muted">
             <span>Powered by VoiceRep Self-Hosted Neural Engine</span>
             <span>Interrupt speaking agent anytime</span>
           </div>

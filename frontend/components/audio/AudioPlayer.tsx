@@ -103,13 +103,13 @@ export function AudioPlayer({
   };
 
   return (
-    <div className="flex items-center gap-3 w-full max-w-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 shadow-xs">
+    <div className="audio-transport">
       <audio ref={audioRef} src={src} preload="metadata" />
 
       {/* Play/Pause Button */}
       <button
         onClick={togglePlay}
-        className="h-10 w-10 flex-shrink-0 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm"
+        className="audio-play hover:opacity-90"
         aria-label={isPlaying ? "Pause" : "Play"}
       >
         {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
@@ -119,13 +119,14 @@ export function AudioPlayer({
       <div className="flex-1 flex flex-col gap-1 min-w-0">
         <input
           type="range"
+          aria-label="Playback position"
           min="0"
           max={duration || 100}
           value={currentTime}
           onChange={handleSeek}
-          className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-neutral-900 dark:accent-white"
+          className="console-range"
         />
-        <div className="flex justify-between text-xs text-neutral-500 font-mono">
+        <div className="audio-time">
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
         </div>
@@ -134,7 +135,7 @@ export function AudioPlayer({
       {/* Mute Button */}
       <button
         onClick={toggleMute}
-        className="p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
+        className="audio-icon"
         aria-label={isMuted ? "Unmute" : "Mute"}
       >
         {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
@@ -145,12 +146,12 @@ export function AudioPlayer({
         type="button"
         onClick={handleDownload}
         disabled={isDownloading}
-        className="p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-50"
+        className="audio-icon disabled:opacity-50"
         aria-label="Download audio"
         title="Download audio directly to computer"
       >
         {isDownloading ? (
-          <Loader2 className="h-4 w-4 animate-spin text-neutral-900 dark:text-white" />
+          <Loader2 className="h-4 w-4 animate-spin text-ink " />
         ) : (
           <Download className="h-4 w-4" />
         )}

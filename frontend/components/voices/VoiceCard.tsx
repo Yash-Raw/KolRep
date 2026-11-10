@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bot, CheckCircle2, Clock, Edit2, Mic, Sparkles, Trash2 } from "lucide-react";
+import { Bot, CheckCircle2, Clock, Edit2, Sparkles, Trash2 } from "lucide-react";
 import { Voice } from "@/types";
 
 interface VoiceCardProps {
@@ -45,7 +45,7 @@ export function VoiceCard({ voice, onRename, onDelete }: VoiceCardProps) {
         );
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-soft  text-muted ">
             {voice.status}
           </span>
         );
@@ -64,72 +64,10 @@ export function VoiceCard({ voice, onRename, onDelete }: VoiceCardProps) {
   };
 
   return (
-    <div className="flex flex-col justify-between p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs hover:shadow-md transition-shadow">
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-900 dark:text-white">
-              <Mic className="h-5 w-5" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-neutral-900 dark:text-white line-clamp-1">{voice.name}</h4>
-              <p className="text-xs text-neutral-500 capitalize">{voice.language || "English"}</p>
-            </div>
-          </div>
-          {getStatusBadge(voice.status)}
-        </div>
-
-        {/* Audio Quality Report Details */}
-        {voice.audio_duration && (
-          <div className="mt-4 flex items-center gap-4 text-xs text-neutral-500 font-mono">
-            <span>Duration: {voice.audio_duration.toFixed(1)}s</span>
-            {voice.quality_report?.quality && (
-              <span className="capitalize">Quality: {voice.quality_report.quality}</span>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          {voice.status === "ready" && (
-            <>
-              <Link
-                href={`/studio?voice=${voice.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Use in Studio</span>
-              </Link>
-              <Link
-                href={`/agents?new=true&voice=${voice.id}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-              >
-                <Bot className="h-3.5 w-3.5" />
-                <span>Assign Agent</span>
-              </Link>
-            </>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onRename(voice)}
-            title="Rename voice"
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-          >
-            <Edit2 className="h-4 w-4" />
-          </button>
-          <button
-            onClick={handleDeleteClick}
-            disabled={isDeleting}
-            title="Delete voice"
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </div>
+    <article className="voice-sleeve">
+      <div className="sleeve-art" aria-hidden="true" />
+      <div className="sleeve-content"><h2 className="sleeve-title">{voice.name}</h2><p className="eyebrow">{voice.language || "English"} / VOICE PROFILE</p><div className="sleeve-meta">{getStatusBadge(voice.status)}{voice.audio_duration && <span className="mono">{voice.audio_duration.toFixed(1)}s</span>}</div>{voice.quality_report?.quality && <p className="text-xs text-muted capitalize mt-3">Audio quality: {voice.quality_report.quality}</p>}</div>
+      <div className="sleeve-actions"><div className="flex flex-wrap gap-2">{voice.status === "ready" && <><Link href={`/studio?voice=${voice.id}`} className="flex items-center gap-1.5 text-xs font-medium text-accent"><Sparkles size={13} />Use in studio</Link><Link href={`/agents?new=true&voice=${voice.id}`} className="flex items-center gap-1.5 text-xs font-medium"><Bot size={13} />Assign agent</Link></>}</div><div className="flex gap-1"><button onClick={() => onRename(voice)} title="Rename voice" aria-label={`Rename ${voice.name}`} className="p-2 text-muted hover:text-ink"><Edit2 size={14} /></button><button onClick={handleDeleteClick} disabled={isDeleting} title="Delete voice" aria-label={`Delete ${voice.name}`} className="p-2 text-muted hover:text-red-600"><Trash2 size={14} /></button></div></div>
+    </article>
   );
 }

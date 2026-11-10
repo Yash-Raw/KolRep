@@ -2,20 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  AlertCircle,
-  Check,
-  Copy,
-  Download,
-  FolderOpen,
-  History,
-  Link as LinkIcon,
-  Loader2,
-  Play,
-  Sparkles,
-  Trash2,
-  Volume2,
-} from "lucide-react";
+import { AlertCircle, Check, Copy, Download, FolderOpen, History, Link as LinkIcon, Loader2, Play, Sparkles, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/StudioUI";
 import { api } from "@/lib/api";
 import { Generation, Voice } from "@/types";
 import { AudioPlayer } from "@/components/audio/AudioPlayer";
@@ -92,27 +80,11 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">Generation History</h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            Browse, listen to, and download all past Voice Studio speech generations.
-          </p>
-        </div>
-
-        <Link
-          href="/studio"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>New Studio Generation</span>
-        </Link>
-      </div>
+    <div className="page history-page">
+      <PageHeader number="03" label="Recording archive" title="Every take, on record." description="Listen back, pick up where you left off, or take your audio with you." actions={<Link href="/studio" className="btn btn-primary"><Sparkles size={16} />New recording</Link>} />
 
       {error && (
-        <div className="flex items-center gap-2 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+        <div className="flex items-center gap-2 p-4 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -120,12 +92,12 @@ export default function HistoryPage() {
 
       {/* Floating Audio Player when active */}
       {activeAudioUrl && (
-        <div className="sticky top-20 z-40 bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-lg">
+        <div className="sticky top-20 z-40 bg-paper  p-4 rounded-lg border border-line  ">
           <div className="flex items-center justify-between pb-2">
-            <span className="text-xs font-semibold text-neutral-900 dark:text-white">Now Playing</span>
+            <span className="text-xs font-semibold text-ink ">Now Playing</span>
             <button
               onClick={() => setActiveAudioUrl(null)}
-              className="text-xs text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+              className="text-xs text-muted hover:text-ink "
             >
               Close
             </button>
@@ -137,52 +109,53 @@ export default function HistoryPage() {
       {/* Table / List */}
       {loading ? (
         <div className="py-24 text-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-neutral-400" />
-          <p className="text-sm text-neutral-500">Loading generation history...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted" />
+          <p className="text-sm text-muted">Loading generation history...</p>
         </div>
       ) : generations.length === 0 ? (
-        <div className="py-20 text-center border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl p-8 space-y-4">
-          <History className="h-10 w-10 text-neutral-400 mx-auto" />
+        <div className="empty-state">
+          <History className="h-10 w-10 text-muted mx-auto" />
           <div>
-            <h3 className="font-semibold text-base text-neutral-900 dark:text-white">No generations found</h3>
-            <p className="text-xs text-neutral-500 max-w-sm mx-auto mt-1">
+            <h3 className="font-semibold text-base text-ink ">No generations found</h3>
+            <p className="text-xs text-muted max-w-sm mx-auto mt-1">
               Synthesize speech in Voice Studio to see your completed audio files and downloads here.
             </p>
           </div>
           <Link
             href="/studio"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-medium hover:bg-neutral-800 transition-colors shadow-xs"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent  text-white  text-xs font-medium hover:bg-soft transition-colors "
           >
             Go to Voice Studio
           </Link>
         </div>
       ) : (
-        <div className="rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-xs">
-          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-            {generations.map((gen) => (
+        <div className="history-list">
+          <div className="divide-y divide-line ">
+            {generations.map((gen, index) => (
               <div
                 key={gen.id}
-                className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors"
+                className="history-entry"
               >
-                <div className="space-y-1.5 flex-1 min-w-0 pr-4">
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium text-xs text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded-full">
+                <span className="history-index">{String(index + 1).padStart(2, "0")}</span>
+                <div className="min-w-0">
+                  <div className="history-meta">
+                    <span className="font-medium text-xs text-ink  bg-soft  px-2.5 py-0.5 rounded-full">
                       {voices[gen.voice_id] || "Cloned Voice"}
                     </span>
-                    <span className="text-[11px] font-mono text-neutral-400">
+                    <span className="text-[11px] font-mono text-muted">
                       {new Date(gen.created_at).toLocaleString()}
                     </span>
-                    <span className="text-[11px] font-mono text-neutral-400">
+                    <span className="text-[11px] font-mono text-muted">
                       {gen.character_count} chars
                     </span>
                   </div>
 
-                  <p className="text-sm text-neutral-700 dark:text-neutral-300 line-clamp-2">
+                  <p className="history-text line-clamp-2">
                     {gen.input_text}
                   </p>
 
                   {gen.local_file_path && (
-                    <div className="flex items-center gap-1.5 pt-0.5 text-[11px] font-mono text-neutral-400 dark:text-neutral-500">
+                    <div className="flex items-center gap-1.5 pt-0.5 text-[11px] font-mono text-muted ">
                       <FolderOpen className="h-3 w-3 shrink-0" />
                       <span className="truncate max-w-lg select-all">{gen.local_file_path}</span>
                     </div>
@@ -194,7 +167,7 @@ export default function HistoryPage() {
                     <>
                       <button
                         onClick={() => setActiveAudioUrl(gen.audio_url || null)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-medium hover:bg-neutral-800 transition-colors shadow-xs"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent  text-white  text-xs font-medium hover:bg-soft transition-colors "
                       >
                         <Play className="h-3 w-3 fill-current" />
                         <span>Play</span>
@@ -204,11 +177,11 @@ export default function HistoryPage() {
                         type="button"
                         onClick={() => handleDownload(gen)}
                         disabled={downloadingId === gen.id}
-                        className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                        className="p-2 rounded-lg text-muted hover:text-ink  hover:bg-soft  transition-colors disabled:opacity-50"
                         title="Download MP3 directly to your computer"
                       >
                         {downloadingId === gen.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-neutral-900 dark:text-white" />
+                          <Loader2 className="h-4 w-4 animate-spin text-ink " />
                         ) : (
                           <Download className="h-4 w-4" />
                         )}
@@ -217,7 +190,7 @@ export default function HistoryPage() {
                       <button
                         type="button"
                         onClick={() => handleCopy(gen.audio_url || "", `url-${gen.id}`)}
-                        className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                        className="p-2 rounded-lg text-muted hover:text-ink  hover:bg-soft  transition-colors"
                         title="Copy direct audio URL"
                       >
                         {copiedAction === `url-${gen.id}` ? (
@@ -231,7 +204,7 @@ export default function HistoryPage() {
                         <button
                           type="button"
                           onClick={() => handleCopy(gen.local_file_path || "", `path-${gen.id}`)}
-                          className="p-2 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                          className="p-2 rounded-lg text-muted hover:text-ink  hover:bg-soft  transition-colors"
                           title="Copy local Mac path"
                         >
                           {copiedAction === `path-${gen.id}` ? (
@@ -246,7 +219,7 @@ export default function HistoryPage() {
 
                   <button
                     onClick={() => handleDelete(gen.id)}
-                    className="p-2 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                    className="p-2 rounded-lg text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                     title="Delete generation"
                   >
                     <Trash2 className="h-4 w-4" />

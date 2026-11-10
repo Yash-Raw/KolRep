@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Bot, Loader2, X } from "lucide-react";
+import { DialogFrame } from "@/components/ui/DialogFrame";
 import { api } from "@/lib/api";
 import { Agent, Voice } from "@/types";
 
@@ -95,18 +96,19 @@ export function CreateAgentModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-      <div className="w-full max-w-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+    <DialogFrame onClose={onClose}>
+      <div className="dialog-panel max-w-lg" role="dialog" aria-modal="true" aria-label="Create an agent">
+        <div className="dialog-header flex items-center justify-between px-6 py-5 border-b border-line ">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg bg-accent  text-white  flex items-center justify-center">
               <Bot className="h-4 w-4" />
             </div>
-            <h3 className="font-semibold text-lg text-neutral-900 dark:text-white">Create Voice Agent</h3>
+            <h3 className="font-semibold text-lg text-ink ">Create Voice Agent</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            aria-label="Close agent creation"
+            className="p-1 rounded-lg text-muted hover:text-ink  hover:bg-soft  transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -121,25 +123,25 @@ export function CreateAgentModal({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+            <label htmlFor="field-name" className="block text-sm font-medium text-ink  mb-1">
               Agent Name
             </label>
-            <input
+            <input id="field-name"
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Research Specialist, Customer Companion"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line  bg-paper  text-ink  text-sm focus:outline-hidden focus:ring-2 focus:ring-accent "
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+            <label htmlFor="field-voiceId" className="block text-sm font-medium text-ink  mb-1">
               Assigned Cloned Voice
             </label>
             {loadingVoices ? (
-              <div className="py-2 flex items-center gap-2 text-xs text-neutral-500">
+              <div className="py-2 flex items-center gap-2 text-xs text-muted">
                 <Loader2 className="h-3 w-3 animate-spin" /> Loading voice library...
               </div>
             ) : voices.length === 0 ? (
@@ -148,9 +150,10 @@ export function CreateAgentModal({
               </p>
             ) : (
               <select
+                id="field-voiceId"
                 value={voiceId}
                 onChange={(e) => setVoiceId(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-line  bg-paper  text-ink  text-sm focus:outline-hidden focus:ring-2 focus:ring-accent "
               >
                 {voices.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -162,29 +165,29 @@ export function CreateAgentModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+            <label htmlFor="field-firstMessage" className="block text-sm font-medium text-ink  mb-1">
               First Greeting
             </label>
-            <input
+            <input id="field-firstMessage"
               type="text"
               required
               value={firstMessage}
               onChange={(e) => setFirstMessage(e.target.value)}
               placeholder="e.g. Hello! What would you like to explore today?"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line  bg-paper  text-ink  text-sm focus:outline-hidden focus:ring-2 focus:ring-accent "
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+            <label htmlFor="field-systemPrompt" className="block text-sm font-medium text-ink  mb-1">
               System Instructions (Prompt)
             </label>
-            <textarea
+            <textarea id="field-systemPrompt"
               rows={4}
               required
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-neutral-900 dark:focus:ring-white"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-line  bg-paper  text-ink  text-sm focus:outline-hidden focus:ring-2 focus:ring-accent "
             />
           </div>
 
@@ -192,14 +195,14 @@ export function CreateAgentModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+              className="px-4 py-2 text-sm text-muted  hover:text-ink "
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || voices.length === 0}
-              className="px-5 py-2.5 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
+              className="px-5 py-2.5 rounded-lg bg-accent  text-white  text-sm font-medium hover:bg-soft  disabled:opacity-50 transition-colors  flex items-center gap-2"
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               <span>Create Agent</span>
@@ -207,6 +210,6 @@ export function CreateAgentModal({
           </div>
         </form>
       </div>
-    </div>
+    </DialogFrame>
   );
 }
