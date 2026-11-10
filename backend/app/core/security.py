@@ -1,10 +1,9 @@
 import logging
 import uuid
 from typing import Optional
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import Depends, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import jwt
-from jwt import PyJWKClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
@@ -14,13 +13,8 @@ from app.models.user import User
 logger = logging.getLogger("voicerep.security")
 security_scheme = HTTPBearer(auto_error=False)
 
-# Cache JWK client if URL configured
-_jwks_client: Optional[PyJWKClient] = None
-if settings.SUPABASE_JWKS_URL:
-    try:
-        _jwks_client = PyJWKClient(settings.SUPABASE_JWKS_URL)
-    except Exception as e:
-        logger.warning(f"Could not initialize JWKS client: {e}")
+DEFAULT_LOCAL_USER_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
+DEFAULT_LOCAL_USER_EMAIL = "local@voicerep.local"
 
 
 class AuthenticatedUser:
@@ -31,70 +25,29 @@ class AuthenticatedUser:
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security_scheme),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ) -> AuthenticatedUser:
-    if not credentials or not credentials.credentials:
-        # Check if running in dev and fallback header exists
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    """
+    Resolves the authenticated user for local single-user operations.
+    In pure local operation, if no credentials are provided or if dev tokens are passed,
+    it seamlessly defaults to the local machine owner with zero auth friction.
+    """
+    user_uuid = DEFAULT_LOCAL_USER_ID
+    user_email = DEFAULT_LOCAL_USER_EMAIL
 
-    token = credentials.credentials
-    user_id_str: Optional[str] = None
-    email: Optional[str] = None
-
-    try:
-        if settings.SUPABASE_JWKS_URL and _jwks_client:
-            signing_key = _jwks_client.get_signing_key_from_jwt(token)
-            payload = jwt.decode(
-                token,
-                signing_key.key,
-                algorithms=["RS256", "ES256"],
-                audience="authenticated",
-                options={"verify_aud": True}
-            )
-            user_id_str = payload.get("sub")
-            email = payload.get("email")
-        elif settings.SUPABASE_JWT_SECRET:
-            payload = jwt.decode(
-                token,
-                settings.SUPABASE_JWT_SECRET,
-                algorithms=["HS256"],
-                audience="authenticated",
-                options={"verify_aud": False}
-            )
-            user_id_str = payload.get("sub")
-            email = payload.get("email")
-        else:
-            # In development/test mode without live Supabase credentials,
-            # allow decoding without signature verification
-            if settings.is_production:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication provider not configured for production",
-                )
-            # Try to decode unverified payload
+    if credentials and credentials.credentials:
+        token = credentials.credentials
+        try:
+            # Decode token if present without external network round-trips
             payload = jwt.decode(token, options={"verify_signature": False})
-            user_id_str = payload.get("sub")
-            email = payload.get("email", "dev@voicerep.local")
+            sub = payload.get("sub")
+            if sub:
+                user_uuid = uuid.UUID(sub)
+                user_email = payload.get("email") or f"{str(user_uuid)[:8]}@voicerep.local"
+        except Exception as e:
+            logger.debug(f"Could not parse custom token, defaulting to local owner: {e}")
 
-        if not user_id_str:
-            raise ValueError("Token missing 'sub' claim")
-
-        user_uuid = uuid.UUID(user_id_str)
-        user_email = email or f"{user_id_str[:8]}@voicerep.local"
-
-    except Exception as e:
-        logger.warning(f"Token verification failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid or expired token: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # Ensure user exists in our local database
+    # Ensure user exists in local database
     stmt = select(User).where(User.id == user_uuid)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
@@ -102,7 +55,12 @@ async def get_current_user(
     if not user:
         user = User(id=user_uuid, email=user_email)
         db.add(user)
-        await db.commit()
-        await db.refresh(user)
+        try:
+            await db.commit()
+            await db.refresh(user)
+        except Exception:
+            await db.rollback()
+            refetched = await db.execute(stmt)
+            user = refetched.scalar_one_or_none() or User(id=user_uuid, email=user_email)
 
     return AuthenticatedUser(user_id=user.id, email=user.email)

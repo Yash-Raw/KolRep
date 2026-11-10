@@ -19,7 +19,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs font-medium text-neutral-600 dark:text-neutral-400 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Enterprise-Grade Voice Cloning & Conversational Agents</span>
+            <span>100% On-Device Voice Cloning & Conversational Agents</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-neutral-900 dark:text-white max-w-4xl mx-auto leading-tight">

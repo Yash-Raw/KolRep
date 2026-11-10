@@ -1,20 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { Download, Loader2, Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { downloadAudioFile } from "@/lib/download";
 
 interface AudioPlayerProps {
   src: string;
   filename?: string;
   autoPlay?: boolean;
+  showWatermarkBadge?: boolean;
 }
 
-export function AudioPlayer({ src, filename = "voicerep_audio.mp3", autoPlay = false }: AudioPlayerProps) {
+export function AudioPlayer({
+  src,
+  filename = "voicerep_audio.mp3",
+  autoPlay = false,
+  showWatermarkBadge = true,
+}: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -84,6 +92,16 @@ export function AudioPlayer({ src, filename = "voicerep_audio.mp3", autoPlay = f
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  const handleDownload = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await downloadAudioFile(src, filename);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="flex items-center gap-3 w-full max-w-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3 shadow-xs">
       <audio ref={audioRef} src={src} preload="metadata" />
@@ -123,16 +141,20 @@ export function AudioPlayer({ src, filename = "voicerep_audio.mp3", autoPlay = f
       </button>
 
       {/* Download Button */}
-      <a
-        href={src}
-        download={filename}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
+      <button
+        type="button"
+        onClick={handleDownload}
+        disabled={isDownloading}
+        className="p-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors disabled:opacity-50"
         aria-label="Download audio"
+        title="Download audio directly to computer"
       >
-        <Download className="h-4 w-4" />
-      </a>
+        {isDownloading ? (
+          <Loader2 className="h-4 w-4 animate-spin text-neutral-900 dark:text-white" />
+        ) : (
+          <Download className="h-4 w-4" />
+        )}
+      </button>
     </div>
   );
 }

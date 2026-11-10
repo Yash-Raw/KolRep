@@ -10,6 +10,7 @@ from app.schemas.generation import (
     GenerationResponse,
 )
 from app.services.studio_service import studio_service
+from app.services.storage_service import storage_service
 
 logger = logging.getLogger("voicerep.api.generations")
 router = APIRouter(tags=["Voice Studio"])
@@ -37,6 +38,8 @@ async def create_generation(
 
     response_data = GenerationResponse.model_validate(gen)
     response_data.audio_url = audio_url
+    if gen.audio_storage_key:
+        response_data.local_file_path = storage_service.get_local_path(gen.audio_storage_key)
     return response_data
 
 
@@ -60,6 +63,7 @@ async def list_generations(
                 resp.audio_url = await studio_service.get_audio_url(db, item.id, current_user.id)
             except Exception:
                 pass
+            resp.local_file_path = storage_service.get_local_path(item.audio_storage_key)
         enriched_items.append(resp)
 
     return GenerationListResponse(items=enriched_items, total=total, page=page, limit=limit)
@@ -76,6 +80,7 @@ async def get_generation(
     resp = GenerationResponse.model_validate(gen)
     if gen.audio_storage_key:
         resp.audio_url = await studio_service.get_audio_url(db, gen.id, current_user.id)
+        resp.local_file_path = storage_service.get_local_path(gen.audio_storage_key)
     return resp
 
 

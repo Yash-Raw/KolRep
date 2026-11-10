@@ -12,8 +12,8 @@ async def agent_ready_voice(db_session):
         id=uuid.uuid4(),
         owner_id=TEST_USER_ID,
         name="Cloned Assistant Voice",
-        provider="elevenlabs",
-        provider_voice_id="el_convai_voice_888",
+        provider="self_hosted",
+        provider_voice_id="self_hosted_voice_888",
         status="ready",
         language="en",
         audio_duration=75.0,
@@ -58,12 +58,12 @@ async def test_agent_lifecycle_and_session(client, agent_ready_voice):
 
     # Start session
     mock_session_res = {
-        "signed_url": "wss://api.elevenlabs.io/v1/convai/conversation?token=signed_jwt_token_here",
+        "signed_url": "ws://localhost:8000/api/v1/agents/ws/mock_session_id",
         "agent_id": "mock_agent_id",
         "session_config": {
             "agent_id": "mock_agent_id",
             "overrides": {
-                "tts": {"voice_id": "el_convai_voice_888"},
+                "tts": {"voice_id": "self_hosted_voice_888"},
                 "agent": {
                     "prompt": {"prompt": "You are a concise research specialist. Answer directly and precisely."},
                     "first_message": "Hello! How can I assist with your research today?",
@@ -73,7 +73,7 @@ async def test_agent_lifecycle_and_session(client, agent_ready_voice):
         },
     }
 
-    with patch("app.services.agent_service.elevenlabs_provider.create_agent_session", new_callable=AsyncMock) as mock_conv:
+    with patch("app.services.agent_service.self_hosted_provider.create_agent_session", new_callable=AsyncMock) as mock_conv:
         mock_conv.return_value = mock_session_res
 
         session_res = await client.post(f"/api/v1/agents/{agent_id}/session")
@@ -81,8 +81,8 @@ async def test_agent_lifecycle_and_session(client, agent_ready_voice):
         sess_data = session_res.json()
         assert "session_id" in sess_data
         assert "signed_url" in sess_data
-        assert sess_data["signed_url"].startswith("wss://")
-        assert sess_data["session_config"]["overrides"]["tts"]["voice_id"] == "el_convai_voice_888"
+        assert sess_data["signed_url"].startswith("ws://")
+        assert sess_data["session_config"]["overrides"]["tts"]["voice_id"] == "self_hosted_voice_888"
 
     # Delete agent
     del_res = await client.delete(f"/api/v1/agents/{agent_id}")

@@ -16,8 +16,8 @@ async def user_a_voice(db_session):
         id=uuid.uuid4(),
         owner_id=TEST_USER_ID,
         name="User A Secret Voice",
-        provider="elevenlabs",
-        provider_voice_id="el_secret_1",
+        provider="self_hosted",
+        provider_voice_id="self_hosted_secret_1",
         status="ready",
     )
     db_session.add(voice)

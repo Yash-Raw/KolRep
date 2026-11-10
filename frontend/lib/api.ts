@@ -3,6 +3,7 @@ import {
   AgentSessionConfig,
   Generation,
   UsageStats,
+  VerificationReport,
   Voice,
   VoiceSettings,
 } from "@/types";
@@ -197,5 +198,24 @@ export const api = {
   // Usage & Metrics
   getUsage: async (): Promise<UsageStats> => {
     return request<UsageStats>("/api/v1/usage");
+  },
+
+  // C2PA & Deepfake Verification
+  verifyAudio: async (file: File): Promise<VerificationReport> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request<VerificationReport>("/api/v1/verify", {
+      method: "POST",
+      body: formData,
+    });
+  },
+
+  getGenerationCertificate: async (generationId: string): Promise<any> => {
+    return request<any>(`/api/v1/verify/certificate/${generationId}`);
+  },
+
+  getPublicCertificate: async (): Promise<string> => {
+    const res = await fetch(`${BACKEND_URL}/api/v1/verify/public-key`);
+    return res.text();
   },
 };

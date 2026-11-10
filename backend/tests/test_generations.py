@@ -12,8 +12,8 @@ async def ready_voice(db_session):
         id=uuid.uuid4(),
         owner_id=TEST_USER_ID,
         name="Alex Narrator",
-        provider="elevenlabs",
-        provider_voice_id="el_alex_999",
+        provider="self_hosted",
+        provider_voice_id="self_hosted_alex_999",
         status="ready",
         language="en",
         audio_duration=65.0,
@@ -28,13 +28,13 @@ async def ready_voice(db_session):
 async def test_generation_flow(client, ready_voice):
     fake_mp3_bytes = b"ID3\x03\x00\x00\x00\x00\x00\x00dummy_audio_bytes"
 
-    with patch("app.services.studio_service.elevenlabs_provider.synthesize", new_callable=AsyncMock) as mock_synth:
+    with patch("app.services.studio_service.self_hosted_provider.synthesize", new_callable=AsyncMock) as mock_synth:
         mock_synth.return_value = fake_mp3_bytes
 
         payload = {
             "voice_id": str(ready_voice.id),
             "input_text": "Hello, welcome to VoiceRep narration studio.",
-            "model_id": "eleven_multilingual_v2",
+            "model_id": "F5TTS_v1_Base",
             "voice_settings": {
                 "stability": 0.5,
                 "similarity_boost": 0.8,
@@ -49,7 +49,16 @@ async def test_generation_flow(client, ready_voice):
         assert data["status"] == "completed"
         assert data["character_count"] == len(payload["input_text"])
         assert data["audio_url"] is not None
+        assert data.get("local_file_path") is not None
         gen_id = data["id"]
+
+        # Verify direct storage download endpoint with attachment header
+        storage_key = data["audio_storage_key"]
+        download_res = await client.get(
+            f"/api/v1/storage/download/{storage_key}?download=true&filename=test_out.mp3"
+        )
+        assert download_res.status_code == 200
+        assert 'attachment; filename="test_out.mp3"' in download_res.headers.get("content-disposition", "")
 
         # Verify list
         list_res = await client.get("/api/v1/generations")
@@ -77,7 +86,7 @@ async def test_generation_rejects_unready_voice(client, db_session):
         id=uuid.uuid4(),
         owner_id=TEST_USER_ID,
         name="Processing Voice",
-        provider="elevenlabs",
+        provider="self_hosted",
         status="cloning",
     )
     db_session.add(unready_voice)

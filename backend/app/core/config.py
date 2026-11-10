@@ -21,13 +21,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/voicerep"
     SYNC_DATABASE_URL: Optional[str] = None
 
-    # Supabase Auth
-    SUPABASE_URL: Optional[str] = None
-    SUPABASE_ANON_KEY: Optional[str] = None
-    SUPABASE_JWKS_URL: Optional[str] = None
-    SUPABASE_JWT_SECRET: Optional[str] = None
-
-    # Voice Provider Configuration ("self_hosted" or "elevenlabs")
+    # Voice Provider Configuration (100% self-hosted local engine)
     VOICE_PROVIDER: str = "self_hosted"
 
     # Self-Hosted Voice Engine Settings
@@ -35,10 +29,6 @@ class Settings(BaseSettings):
     SELF_HOSTED_DEVICE: str = "auto"
     SELF_HOSTED_VOICE_DIR: str = "./storage/voice_profiles"
     SELF_HOSTED_NFE_STEPS: int = 32
-
-    # ElevenLabs
-    ELEVENLABS_API_KEY: Optional[str] = None
-    ELEVENLABS_AGENT_ID: Optional[str] = None
 
     # Gemini (Optional Analysis)
     GEMINI_API_KEY: Optional[str] = None
