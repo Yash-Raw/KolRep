@@ -21,7 +21,6 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
   const [language, setLanguage] = useState("en");
   const [speakerRelationship, setSpeakerRelationship] = useState("self");
   const [speechGenAllowed, setSpeechGenAllowed] = useState(true);
-  const [agentAllowed, setAgentAllowed] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -193,7 +192,6 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
         "consent_scope",
         JSON.stringify({
           speech_generation: speechGenAllowed,
-          ai_agent: agentAllowed,
         })
       );
       formData.append("terms_accepted", "true");
@@ -495,15 +493,6 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
                       className="rounded border-line  text-ink"
                     />
                     <span>Allow Text-to-Speech narration generation</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-xs text-muted  cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={agentAllowed}
-                      onChange={(e) => setAgentAllowed(e.target.checked)}
-                      className="rounded border-line  text-ink"
-                    />
-                    <span>Allow Conversational AI Voice Agents</span>
                   </label>
                 </div>
               </div>

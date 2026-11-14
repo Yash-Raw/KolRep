@@ -56,27 +56,6 @@ services:
       - ./backend:/app
       - backend_storage:/app/storage
 
-  worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: voicerep_worker
-    restart: unless-stopped
-    command: python -m arq app.workers.worker.WorkerSettings
-    environment:
-      - APP_ENV=development
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@db:5432/voicerep
-      - SYNC_DATABASE_URL=postgresql+psycopg2://postgres:postgrespassword@db:5432/voicerep
-      - REDIS_URL=redis://redis:6379/0
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - backend_storage:/app/storage
-
   frontend:
     build:
       context: ./frontend

@@ -3,8 +3,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import AuthenticatedUser, get_current_user
 from app.database.session import get_db
-from app.models.agent import Agent
-from app.models.agent_session import AgentSession
 from app.models.generation import Generation
 from app.models.voice import Voice
 from app.schemas.usage import UsageResponse
@@ -55,17 +53,6 @@ async def get_usage(
     )
     total_characters_used = chars_res.scalar() or 0
 
-    # Agents counts
-    agents_res = await db.execute(
-        select(func.count(Agent.id)).where(Agent.owner_id == current_user.id)
-    )
-    total_agents = agents_res.scalar() or 0
-
-    sessions_res = await db.execute(
-        select(func.count(AgentSession.id)).where(AgentSession.owner_id == current_user.id)
-    )
-    total_sessions = sessions_res.scalar() or 0
-
     # Recent activity
     recent_gens = await db.execute(
         select(Generation)
@@ -90,7 +77,5 @@ async def get_usage(
         total_generations=total_generations,
         completed_generations=completed_generations,
         total_characters_used=int(total_characters_used),
-        total_agents=total_agents,
-        total_sessions=total_sessions,
         recent_activity=recent_activity,
     )

@@ -476,39 +476,5 @@ class SelfHostedProvider(VoiceProvider):
                 model_id,
             )
 
-    async def create_agent_session(
-        self,
-        provider_voice_id: str,
-        agent_config: dict[str, Any],
-    ) -> dict[str, Any]:
-        """
-        Generate WebSocket connection URL for local conversational voice agent streaming.
-        """
-        session_id = str(uuid.uuid4())
-        ws_base = settings.BACKEND_URL.replace("http://", "ws://").replace("https://", "wss://")
-        signed_url = f"{ws_base}/api/v1/agents/ws/{session_id}"
-
-        session_config = {
-            "agent_id": f"self_hosted_agent_{session_id}",
-            "overrides": {
-                "tts": {
-                    "voice_id": provider_voice_id,
-                },
-                "agent": {
-                    "prompt": {
-                        "prompt": agent_config.get("system_prompt", ""),
-                    },
-                    "first_message": agent_config.get("first_message", ""),
-                    "language": agent_config.get("language", "en"),
-                },
-            },
-        }
-
-        return {
-            "signed_url": signed_url,
-            "agent_id": f"self_hosted_agent_{session_id}",
-            "session_config": session_config,
-        }
-
 
 self_hosted_provider = SelfHostedProvider()

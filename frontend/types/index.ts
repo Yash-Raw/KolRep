@@ -42,7 +42,7 @@ export interface VoiceConsent {
   speaker_relationship: "self" | "authorized_representative";
   consent_scope: {
     speech_generation: boolean;
-    ai_agent: boolean;
+    ai_agent?: boolean;
   };
   terms_version: string;
   consent_status: "granted" | "revoked" | "pending";
@@ -102,49 +102,12 @@ export interface VerificationReport {
   compliance: string[];
 }
 
-export interface Agent {
-  id: string;
-  owner_id: string;
-  voice_id: string;
-  name: string;
-  description?: string;
-  system_prompt: string;
-  first_message: string;
-  language: string;
-  status: "active" | "inactive";
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AgentSessionConfig {
-  session_id: string;
-  signed_url: string;
-  agent_id: string;
-  session_config: {
-    agent_id: string;
-    overrides: {
-      tts: {
-        voice_id: string;
-      };
-      agent: {
-        prompt: {
-          prompt: string;
-        };
-        first_message: string;
-        language: string;
-      };
-    };
-  };
-}
-
 export interface UsageStats {
   total_voices: number;
   ready_voices: number;
   total_generations: number;
   completed_generations: number;
   total_characters_used: number;
-  total_agents: number;
-  total_sessions: number;
   recent_activity: Array<{
     type: string;
     id: string;

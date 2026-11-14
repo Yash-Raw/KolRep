@@ -41,7 +41,7 @@ async def create_voice(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Upload an authorized voice sample, validate quality, record consent, and create clone."""
-    parsed_scope = {"speech_generation": True, "ai_agent": True}
+    parsed_scope = {"speech_generation": True}
     if consent_scope:
         try:
             parsed_scope = json.loads(consent_scope)

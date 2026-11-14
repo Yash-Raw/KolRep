@@ -8,7 +8,7 @@ from app.schemas.audio import AudioQualityReport
 class VoiceConsentCreate(BaseModel):
     speaker_relationship: str = Field(..., description="'self' or 'authorized_representative'")
     consent_scope: dict[str, bool] = Field(
-        default_factory=lambda: {"speech_generation": True, "ai_agent": True},
+        default_factory=lambda: {"speech_generation": True},
         description="Allowed use cases"
     )
     terms_accepted: bool = Field(..., description="Must accept terms of use and consent policy")
@@ -22,7 +22,7 @@ class VoiceCreate(BaseModel):
     transcript: Optional[str] = Field(None, max_length=1000, description="Exact spoken words in the reference audio")
     description: Optional[str] = Field(None, max_length=500, description="Voice description")
     consent_scope: dict[str, bool] = Field(
-        default_factory=lambda: {"speech_generation": True, "ai_agent": True}
+        default_factory=lambda: {"speech_generation": True}
     )
     terms_accepted: bool = Field(default=True)
 

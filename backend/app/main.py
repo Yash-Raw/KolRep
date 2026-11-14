@@ -67,7 +67,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="VoiceRep API",
-    description="AI Voice Replication & Conversational Agent Platform",
+    description="100% Local AI Voice Replication & Studio Narration Platform",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",

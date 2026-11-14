@@ -66,7 +66,7 @@ Every generated waveform embeds **Dual-Layer Deepfake Protection**: an in-band i
 | **Provenance Signing** | C2PA specification, X.509 ECDSA (SECP256R1), ID3v2 `GEOB` / RIFF `c2pa` encapsulation |
 | **Audio Processing** | FFmpeg 9.0.2 (`silencedetect`, `volumedetect`), SoundFile, Librosa, SciPy FFT |
 | **Hardware Acceleration** | Apple Silicon (`mps`), NVIDIA CUDA (`cuda`), CPU fallback |
-| **Database & Cache** | PostgreSQL 16, SQLAlchemy 2.0 (async), Alembic, Redis 7 + ARQ |
+| **Database & Cache** | PostgreSQL 16, SQLAlchemy 2.0 (async), Alembic, Redis 7 |
 | **Storage** | 100% Local filesystem (`./storage`) with directory traversal protection |
 | **License** | GNU Affero General Public License v3.0 (AGPL-3.0) |
 
@@ -154,9 +154,6 @@ Services started:
 - **Public Authenticity Inspector (`/verify`)**:
   - Anyone can drag & drop an audio file into the web inspector to extract hidden acoustic watermarks and verify C2PA signatures.
   - Downloadable `.c2pa` manifest sidecars and public X.509 authority certificates.
-
-### 4. Voice Agents (v1.1 Milestone)
-- The conversational full-duplex agent module is scheduled for the v1.1 milestone. Database models and WebSocket foundations are in place.
 
 ---
 

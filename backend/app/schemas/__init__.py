@@ -13,13 +13,6 @@ from app.schemas.generation import (
     GenerationResponse,
     VoiceSettings,
 )
-from app.schemas.agent import (
-    AgentCreate,
-    AgentListResponse,
-    AgentResponse,
-    AgentSessionStartResponse,
-    AgentUpdate,
-)
 from app.schemas.usage import UsageResponse
 
 __all__ = [
@@ -34,10 +27,5 @@ __all__ = [
     "GenerationListResponse",
     "GenerationResponse",
     "VoiceSettings",
-    "AgentCreate",
-    "AgentListResponse",
-    "AgentResponse",
-    "AgentSessionStartResponse",
-    "AgentUpdate",
     "UsageResponse",
 ]

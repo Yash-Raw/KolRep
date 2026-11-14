@@ -1,6 +1,4 @@
 import {
-  Agent,
-  AgentSessionConfig,
   Generation,
   UsageStats,
   VerificationReport,
@@ -135,63 +133,6 @@ export const api = {
   deleteGeneration: async (id: string): Promise<void> => {
     return request<void>(`/api/v1/generations/${id}`, {
       method: "DELETE",
-    });
-  },
-
-  // Voice Agents
-  getAgents: async (page = 1, limit = 50): Promise<{ items: Agent[]; total: number }> => {
-    return request<{ items: Agent[]; total: number }>(
-      `/api/v1/agents?page=${page}&limit=${limit}`
-    );
-  },
-
-  getAgent: async (id: string): Promise<Agent> => {
-    return request<Agent>(`/api/v1/agents/${id}`);
-  },
-
-  createAgent: async (data: {
-    name: string;
-    voice_id: string;
-    description?: string;
-    system_prompt: string;
-    first_message: string;
-    language?: string;
-  }): Promise<Agent> => {
-    return request<Agent>("/api/v1/agents", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-  },
-
-  updateAgent: async (
-    id: string,
-    data: Partial<{
-      name: string;
-      voice_id: string;
-      description: string;
-      system_prompt: string;
-      first_message: string;
-      language: string;
-      status: string;
-    }>
-  ): Promise<Agent> => {
-    return request<Agent>(`/api/v1/agents/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-  },
-
-  deleteAgent: async (id: string): Promise<void> => {
-    return request<void>(`/api/v1/agents/${id}`, {
-      method: "DELETE",
-    });
-  },
-
-  startAgentSession: async (agentId: string): Promise<AgentSessionConfig> => {
-    return request<AgentSessionConfig>(`/api/v1/agents/${agentId}/session`, {
-      method: "POST",
     });
   },
 

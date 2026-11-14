@@ -26,7 +26,6 @@ class Voice(Base):
     owner = relationship("User", back_populates="voices")
     consents = relationship("VoiceConsent", back_populates="voice", cascade="all, delete-orphan")
     generations = relationship("Generation", back_populates="voice", cascade="all, delete-orphan")
-    agents = relationship("Agent", back_populates="voice")
 
     __table_args__ = (
         Index("ix_voices_owner_status", "owner_id", "status"),

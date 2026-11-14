@@ -125,7 +125,7 @@ h1,h2,h3,h4,p { overflow-wrap:anywhere; }
 .audio-transport .console-range { background:#5a5d50; }
 .audio-time { display:flex; justify-content:space-between; margin-top:8px; color:#bdc0b2; font-family:var(--font-console); font-size:10px; }
 .audio-icon { color:#d2d4c9; padding:8px; }
-/* Library / agents */
+/* Library */
 .library-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; counter-reset:sleeve; }
 .voice-sleeve { counter-increment:sleeve; background:var(--paper); border:1px solid var(--line); min-width:0; display:flex; flex-direction:column; }
 .sleeve-art { background:var(--soft); height:150px; position:relative; overflow:hidden; border-bottom:1px solid var(--line); padding:16px; }
@@ -137,9 +137,6 @@ h1,h2,h3,h4,p { overflow-wrap:anywhere; }
 .sleeve-title { font-size:24px; line-height:1.15; letter-spacing:-.04em; margin-bottom:8px; font-weight:500; }
 .sleeve-meta { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; font-size:11px; color:var(--muted); }
 .sleeve-actions { display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:16px 20px; border-top:1px solid var(--line); }
-.agent-unit { border:1px solid var(--line); background:var(--paper); padding:24px; display:flex; flex-direction:column; min-height:300px; }
-.agent-unit-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; }
-.agent-unit .sleeve-actions { padding:20px 0 0; margin-top:auto; }
 .history-list { border-top:1px solid var(--ink); }
 .history-entry { display:grid; grid-template-columns:48px minmax(0,1fr) auto; gap:18px; border-bottom:1px solid var(--line); padding:26px 0; }
 .history-index { font-family:var(--font-console); font-size:11px; color:var(--muted); padding-top:3px; }

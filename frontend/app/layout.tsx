@@ -8,9 +8,9 @@ const studioFont = localFont({ src: "../public/fonts/SpaceGrotesk.ttf", variable
 const consoleFont = localFont({ src: "../public/fonts/IBMPlexMono-Regular.ttf", variable: "--font-console", display: "swap", weight: "400" });
 
 export const metadata: Metadata = {
-  title: "VoiceRep — AI Voice Replication & Agents",
+  title: "VoiceRep — 100% Local AI Voice Cloning & Studio Narration",
   description:
-    "Upload an authorized voice once. Reusable high-fidelity voice cloning for Text-to-Speech narration and Conversational AI Voice Agents.",
+    "Instant zero-shot local voice cloning and studio narration with dual-layer C2PA cryptographic provenance and 100% data privacy.",
 };
 
 export default function RootLayout({

@@ -34,12 +34,3 @@ class VoiceProvider(ABC):
     ) -> bytes:
         """Synthesize text into speech audio bytes."""
         pass
-
-    @abstractmethod
-    async def create_agent_session(
-        self,
-        provider_voice_id: str,
-        agent_config: dict[str, Any],
-    ) -> dict[str, Any]:
-        """Generate a signed WebSocket URL and session parameters for a conversational AI session."""
-        pass

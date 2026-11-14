@@ -16,5 +16,3 @@ class User(Base):
     voices = relationship("Voice", back_populates="owner", cascade="all, delete-orphan")
     consents = relationship("VoiceConsent", back_populates="owner", cascade="all, delete-orphan")
     generations = relationship("Generation", back_populates="owner", cascade="all, delete-orphan")
-    agents = relationship("Agent", back_populates="owner", cascade="all, delete-orphan")
-    sessions = relationship("AgentSession", back_populates="owner", cascade="all, delete-orphan")

@@ -64,20 +64,7 @@ async def test_self_hosted_create_get_delete_voice(temp_voice_dir, fake_wav_file
     assert meta["name"] == "Morgan Freeman Clone"
     assert meta["ref_text"] == "A warm, resonant narration voice clone"
 
-    # 3. Create Agent Session
-    agent_session = await provider.create_agent_session(
-        provider_voice_id=voice_id,
-        agent_config={
-            "system_prompt": "You are a customer support agent.",
-            "first_message": "Hello! How can I assist?",
-            "language": "en",
-        },
-    )
-    assert "signed_url" in agent_session
-    assert "/api/v1/agents/ws/" in agent_session["signed_url"]
-    assert agent_session["session_config"]["overrides"]["tts"]["voice_id"] == voice_id
-
-    # 4. Delete voice
+    # 3. Delete voice
     del_res = await provider.delete_voice(voice_id)
     assert del_res is True
     assert not profile_dir.exists()
@@ -115,46 +102,6 @@ async def test_self_hosted_synthesis_pipeline(temp_voice_dir, fake_wav_file):
 
         assert isinstance(audio_bytes, bytes)
         assert len(audio_bytes) > 0
-
-
-def test_agent_conversational_websocket_endpoint():
-    """Verify bidirectional streaming protocol over local agent WebSocket."""
-    client = TestClient(app)
-    session_id = str(uuid.uuid4())
-
-    with client.websocket_connect(f"/api/v1/agents/ws/{session_id}") as ws:
-        # Send initiation
-        init_payload = {
-            "type": "conversation_initiation_client_data",
-            "conversation_config_override": {
-                "agent": {
-                    "first_message": "Welcome! I am ready.",
-                }
-            },
-        }
-        ws.send_text(json.dumps(init_payload))
-
-        # First message from agent
-        data = ws.receive_json()
-        assert data["type"] == "agent_response"
-        assert data["agent_response_event"]["agent_response"] == "Welcome! I am ready."
-
-        # User sends a transcription event
-        user_msg = {
-            "type": "user_transcript",
-            "user_transcript": "Can you summarize my notifications?",
-        }
-        ws.send_text(json.dumps(user_msg))
-
-        # Agent returns transcript echo
-        transcript_ack = ws.receive_json()
-        assert transcript_ack["type"] == "user_transcript"
-        assert transcript_ack["user_transcription_event"]["user_transcript"] == "Can you summarize my notifications?"
-
-        # Agent returns response
-        agent_reply = ws.receive_json()
-        assert agent_reply["type"] == "agent_response"
-        assert "summarize my notifications" in agent_reply["agent_response_event"]["agent_response"]
 
 
 def test_text_normalization():
@@ -282,13 +229,25 @@ def test_storage_path_traversal_security_guard():
 
     # 4. Valid upload and download with HTTP 206 Byte Range support
     valid_key = f"generations/test_{uuid.uuid4().hex}.txt"
-    upload_res = client.post(
-        f"/api/v1/storage/upload/{valid_key}",
-        files={"file": ("test.txt", b"Valid VoiceRep content", "text/plain")},
-    )
-    assert upload_res.status_code == 200
+    try:
+        upload_res = client.post(
+            f"/api/v1/storage/upload/{valid_key}",
+            files={"file": ("test.txt", b"Valid VoiceRep content", "text/plain")},
+        )
+        assert upload_res.status_code == 200
 
-    download_res = client.get(f"/api/v1/storage/download/{valid_key}")
-    assert download_res.status_code == 200
-    assert download_res.headers.get("accept-ranges") == "bytes"
-    assert download_res.content == b"Valid VoiceRep content"
+        download_res = client.get(f"/api/v1/storage/download/{valid_key}")
+        assert download_res.status_code == 200
+        assert download_res.headers.get("accept-ranges") == "bytes"
+        assert download_res.content == b"Valid VoiceRep content"
+    finally:
+        # Clean up temporary test file from storage
+        from app.core.config import settings
+        test_file_path = os.path.abspath(os.path.join(settings.LOCAL_STORAGE_PATH, valid_key))
+        if os.path.exists(test_file_path):
+            os.remove(test_file_path)
+        # Also clean in relative storage if running from root or backend
+        for alt in ["./storage", "../storage", "backend/storage"]:
+            alt_path = os.path.abspath(os.path.join(alt, valid_key))
+            if os.path.exists(alt_path):
+                os.remove(alt_path)
