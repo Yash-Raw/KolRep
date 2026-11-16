@@ -92,7 +92,19 @@ Every generated waveform embeds **Dual-Layer Deepfake Protection**: an in-band i
 
 ## 🚀 Quickstart (Run Locally in 2 Minutes)
 
-### Option 1: Turnkey Local Launcher (Recommended)
+### Option 1: Native macOS Desktop Application (Recommended for Mac Users)
+
+For macOS Apple Silicon (M1/M2/M3/M4) users who want a 1-click standalone desktop app with zero dependencies (no Python, Node.js, Docker, PostgreSQL, Redis, or FFmpeg required):
+
+1. **[Download VoiceRep_1.0.0_aarch64.dmg](https://github.com/Yash-Raw/VoiceRep/releases/download/v1.0.0/VoiceRep_1.0.0_aarch64.dmg)** (SHA-256: `af2ebc82d094b55f88f3bd9ef05d1b8708bfe420773a8d83232ead518543975b`).
+2. Open the disk image and drag **VoiceRep.app** into your **Applications** folder.
+3. Launch **VoiceRep** and complete the first-time model setup via the in-app modal.
+
+> **macOS First-Launch Note:** If macOS Gatekeeper shows a warning on first open, right-click `VoiceRep.app` ➔ **Open** (or approve via **System Settings ➔ Privacy & Security ➔ Open Anyway**).
+
+---
+
+### Option 2: Turnkey Local Launcher (Developers & Linux)
 
 Make sure you have Python 3.11+, Node.js 20+, and FFmpeg installed:
 
@@ -113,7 +125,7 @@ The script automatically detects hardware acceleration (`mps` / `cuda`), runs da
 
 ---
 
-### Option 2: Docker Compose (1 Command)
+### Option 3: Docker Compose (1 Command)
 
 ```bash
 docker compose up -d --build

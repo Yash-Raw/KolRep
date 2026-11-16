@@ -69,7 +69,7 @@ export default function VerifyPage() {
       downloadAnchor.click();
       downloadAnchor.remove();
     } catch (err: any) {
-      alert("Could not download public certificate: " + err.message);
+      setError("Could not download public certificate: " + (err?.message || String(err)));
     }
   };
 

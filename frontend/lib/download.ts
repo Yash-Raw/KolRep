@@ -32,6 +32,8 @@ export function formatAudioFilename(options: {
   return `${parts.join("_")}.mp3`;
 }
 
+import { getBackendUrl } from "@/lib/api";
+
 /**
  * Initiates a seamless direct file download to the user's computer.
  * Uses client-side blob conversion to bypass cross-origin browser restrictions
@@ -41,8 +43,13 @@ export async function downloadAudioFile(
   url: string,
   filename: string
 ): Promise<void> {
+  const resolvedUrl =
+    url.startsWith("http://") || url.startsWith("https://") || url.startsWith("blob:")
+      ? url
+      : `${getBackendUrl()}${url.startsWith("/") ? "" : "/"}${url}`;
+
   try {
-    const response = await fetch(url);
+    const response = await fetch(resolvedUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch audio stream (${response.status})`);
     }
@@ -65,8 +72,8 @@ export async function downloadAudioFile(
   } catch (err) {
     console.warn("Direct blob download failed, falling back to server attachment:", err);
     // Fallback: Append download=true & filename query params to trigger server Content-Disposition
-    const separator = url.includes("?") ? "&" : "?";
-    const fallbackUrl = `${url}${separator}download=true&filename=${encodeURIComponent(filename)}`;
+    const separator = resolvedUrl.includes("?") ? "&" : "?";
+    const fallbackUrl = `${resolvedUrl}${separator}download=true&filename=${encodeURIComponent(filename)}`;
 
     const a = document.createElement("a");
     a.style.display = "none";

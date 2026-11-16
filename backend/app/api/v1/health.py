@@ -22,21 +22,25 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         logger.error(f"Database health check failed: {e}")
         db_status = f"unhealthy: {str(e)}"
 
-    # Test Redis
-    try:
-        r = redis.from_url(settings.REDIS_URL)
-        await r.ping()
-        await r.aclose()
-    except Exception as e:
-        logger.error(f"Redis health check failed: {e}")
-        redis_status = f"unhealthy: {str(e)}"
+    # Test Redis (if enabled)
+    if settings.ENABLE_REDIS:
+        try:
+            r = redis.from_url(settings.REDIS_URL)
+            await r.ping()
+            await r.aclose()
+        except Exception as e:
+            logger.error(f"Redis health check failed: {e}")
+            redis_status = f"unhealthy: {str(e)}"
+    else:
+        redis_status = "disabled (desktop mode)"
 
-    overall = "ok" if db_status == "healthy" and redis_status == "healthy" else "degraded"
+    overall = "ok" if db_status == "healthy" and (redis_status == "healthy" or not settings.ENABLE_REDIS) else "degraded"
 
     return {
         "status": overall,
         "database": db_status,
         "redis": redis_status,
         "environment": settings.APP_ENV,
+        "desktop_mode": settings.VOICEREP_DESKTOP_MODE,
         "version": "1.0.0",
     }

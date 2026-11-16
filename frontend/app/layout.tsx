@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Suspense } from "react";
 import { Navbar } from "@/components/layout/Navbar";
+import { ModelSetupModal } from "@/components/desktop/ModelSetupModal";
 import "./globals.css";
 
 const studioFont = localFont({ src: "../public/fonts/SpaceGrotesk.ttf", variable: "--font-studio", display: "swap", weight: "300 700" });
@@ -30,6 +31,7 @@ export default function RootLayout({
             {children}
           </Suspense>
         </main>
+        <ModelSetupModal />
       </body>
     </html>
   );

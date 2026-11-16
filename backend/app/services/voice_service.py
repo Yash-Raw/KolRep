@@ -104,8 +104,9 @@ class VoiceService:
                 clone_res = await active_provider.create_voice(
                     name=voice.name,
                     audio_file_path=temp_wav,
-                    description=voice_data.transcript or voice_data.description or f"Cloned for VoiceRep user {owner_id}",
+                    description=voice_data.description or f"Cloned for VoiceRep user {owner_id}",
                     remove_background_noise=False,
+                    transcript=voice_data.transcript,
                 )
                 voice.provider_voice_id = clone_res.get("voice_id")
                 if clone_res.get("requires_verification"):

@@ -26,7 +26,7 @@ export function VoiceSettingsForm({
   return (
     <section className="inspector" aria-label="Acoustic and model settings">
       <div className="inspector-heading"><h2>Delivery controls</h2><SlidersHorizontal size={15} className="text-muted" /></div>
-      <div className="parameter"><label htmlFor="generation-model" className="eyebrow">GENERATION MODEL</label><select id="generation-model" value={modelId} onChange={(e) => onModelChange(e.target.value)} className="model-select"><option value="F5TTS_v1_Base">F5-TTS Base · Local</option><option value="F5TTS_v1_Fast">F5-TTS Fast · 16-step</option></select></div>
+      <div className="parameter"><label htmlFor="generation-model" className="eyebrow">GENERATION MODEL</label><select id="generation-model" value={modelId} onChange={(e) => onModelChange(e.target.value)} className="model-select"><option value="F5TTS_v1_Base">F5-TTS Base · 36-step (High Fidelity)</option><option value="F5TTS_v1_Fast">F5-TTS Fast · 24-step (Rapid)</option></select></div>
       {([
         { field: "stability", label: "Stability", min: 0, max: 1, low: "More expressive", high: "More consistent" },
         { field: "similarity_boost", label: "Similarity boost", min: 0, max: 1, low: "Low", high: "High fidelity" },

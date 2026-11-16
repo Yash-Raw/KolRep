@@ -10,6 +10,7 @@ class VoiceProvider(ABC):
         audio_file_path: str,
         description: Optional[str] = None,
         remove_background_noise: bool = False,
+        transcript: Optional[str] = None,
     ) -> dict[str, Any]:
         """Clone an authorized voice using instant voice cloning."""
         pass

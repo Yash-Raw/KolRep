@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, Mic2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/StudioUI";
 import { DialogFrame } from "@/components/ui/DialogFrame";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/api";
 import { Voice } from "@/types";
 import { CreateVoiceModal } from "@/components/voices/CreateVoiceModal";
@@ -16,6 +17,10 @@ export default function VoicesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVoice, setEditingVoice] = useState<Voice | null>(null);
   const [newName, setNewName] = useState("");
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [voiceToDelete, setVoiceToDelete] = useState<Voice | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     loadVoices();
@@ -38,28 +43,36 @@ export default function VoicesPage() {
     setVoices((prev) => [newVoice, ...prev]);
   };
 
-  const handleDeleteVoice = async (voiceId: string) => {
+  const handleConfirmDelete = async () => {
+    if (!voiceToDelete) return;
+    setIsDeleting(true);
+    setDeleteError(null);
     try {
-      await api.deleteVoice(voiceId);
-      setVoices((prev) => prev.filter((v) => v.id !== voiceId));
+      await api.deleteVoice(voiceToDelete.id);
+      setVoices((prev) => prev.filter((v) => v.id !== voiceToDelete.id));
+      setVoiceToDelete(null);
     } catch (err: any) {
-      alert(`Failed to delete voice: ${err.message}`);
+      setDeleteError(err.message || "Failed to delete voice profile");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleOpenRename = (voice: Voice) => {
     setEditingVoice(voice);
     setNewName(voice.name);
+    setRenameError(null);
   };
 
   const handleSaveRename = async () => {
     if (!editingVoice || !newName.trim()) return;
+    setRenameError(null);
     try {
       const updated = await api.updateVoice(editingVoice.id, { name: newName.trim() });
       setVoices((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
       setEditingVoice(null);
     } catch (err: any) {
-      alert(`Failed to rename voice: ${err.message}`);
+      setRenameError(err.message || "Failed to rename voice");
     }
   };
 
@@ -106,7 +119,7 @@ export default function VoicesPage() {
               key={voice.id}
               voice={voice}
               onRename={handleOpenRename}
-              onDelete={handleDeleteVoice}
+              onDelete={setVoiceToDelete}
             />
           ))}
         </div>
@@ -119,11 +132,37 @@ export default function VoicesPage() {
         onSuccess={handleVoiceCreated}
       />
 
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!voiceToDelete}
+        title="Delete Voice Profile"
+        description={
+          deleteError
+            ? `Error deleting voice: ${deleteError}`
+            : `Are you sure you want to permanently delete "${voiceToDelete?.name}"? This will remove its acoustic profile, reference audio, and stored model weights from your device.`
+        }
+        confirmLabel="Delete Voice"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          if (!isDeleting) {
+            setVoiceToDelete(null);
+            setDeleteError(null);
+          }
+        }}
+      />
+
       {/* Rename Dialog */}
       {editingVoice && (
         <DialogFrame onClose={() => setEditingVoice(null)}>
           <div className="dialog-panel max-w-md p-6 space-y-4" role="dialog" aria-modal="true" aria-label="Rename voice">
             <h3 className="font-semibold text-lg text-ink ">Rename Voice</h3>
+            {renameError && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-600 dark:text-red-400">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{renameError}</span>
+              </div>
+            )}
             <input
               aria-label="Voice name"
               type="text"

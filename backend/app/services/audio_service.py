@@ -1,9 +1,11 @@
 import json
 import logging
 import os
+from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from typing import Optional
 from app.core.config import settings
@@ -13,15 +15,43 @@ logger = logging.getLogger("voicerep.audio")
 
 
 def get_binary_path(name: str) -> str:
-    # First check standard PATH
+    # 1. Check explicit environment override
+    env_key = f"VOICEREP_{name.upper()}_PATH"
+    if os.environ.get(env_key) and os.path.exists(os.environ[env_key]):
+        return os.environ[env_key]
+
+    # 2. Check bundled app resources (macOS .app bundle or desktop data dir)
+    if hasattr(sys, "executable"):
+        exec_dir = Path(sys.executable).resolve().parent
+        candidate_paths = [
+            exec_dir / "bin" / name,
+            exec_dir / name,
+            exec_dir.parent / "bin" / name,
+            exec_dir.parent / "Resources" / "bin" / name,
+            exec_dir.parent / "Resources" / "resources" / "bin" / name,
+            exec_dir.parent.parent / "bin" / name,
+            exec_dir.parent.parent / "resources" / "bin" / name,
+            Path("/Applications/VoiceRep.app/Contents/Resources/resources/bin") / name,
+            Path.home() / "Applications" / "VoiceRep.app" / "Contents" / "Resources" / "resources" / "bin" / name,
+        ]
+        for cp in candidate_paths:
+            if cp.exists() and os.access(str(cp), os.X_OK):
+                return str(cp)
+
+    if settings.DESKTOP_DATA_DIR:
+        desktop_bin = Path(settings.DESKTOP_DATA_DIR) / "bin" / name
+        if desktop_bin.exists() and os.access(str(desktop_bin), os.X_OK):
+            return str(desktop_bin)
+
+    # 3. Check standard PATH
     path = shutil.which(name)
     if path:
         return path
-    # Check conda environment
+    # 4. Check conda environment
     conda_bin = f"/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/{name}"
     if os.path.exists(conda_bin):
         return conda_bin
-    # Check homebrew
+    # 5. Check homebrew
     brew_bin = f"/opt/homebrew/bin/{name}"
     if os.path.exists(brew_bin):
         return brew_bin

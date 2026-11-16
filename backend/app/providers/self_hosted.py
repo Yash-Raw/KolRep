@@ -14,6 +14,48 @@ import numpy as np
 import soundfile as sf
 import torch
 
+# Ensure torchaudio safely falls back to soundfile if torchcodec is unavailable
+try:
+    import torchaudio
+    _orig_ta_load = torchaudio.load
+    def _safe_ta_load(filepath, *args, **kwargs):
+        try:
+            return _orig_ta_load(filepath, *args, **kwargs)
+        except Exception:
+            data, sr = sf.read(str(filepath), dtype="float32")
+            tensor = torch.from_numpy(data)
+            if tensor.ndim == 1:
+                tensor = tensor.unsqueeze(0)
+            else:
+                tensor = tensor.t()
+            return tensor, sr
+
+    _orig_ta_save = torchaudio.save
+    def _safe_ta_save(filepath, src, sample_rate, *args, **kwargs):
+        try:
+            return _orig_ta_save(filepath, src, sample_rate, *args, **kwargs)
+        except Exception:
+            data = src.detach().cpu().numpy()
+            if data.ndim == 2:
+                data = data.T
+            sf.write(str(filepath), data, sample_rate)
+
+    torchaudio.load = _safe_ta_load
+    torchaudio.save = _safe_ta_save
+    if hasattr(torchaudio, "load_with_torchcodec"):
+        torchaudio.load_with_torchcodec = _safe_ta_load
+    if hasattr(torchaudio, "save_with_torchcodec"):
+        torchaudio.save_with_torchcodec = _safe_ta_save
+
+    try:
+        import torchaudio._torchcodec
+        torchaudio._torchcodec.load_with_torchcodec = _safe_ta_load
+        torchaudio._torchcodec.save_with_torchcodec = _safe_ta_save
+    except Exception:
+        pass
+except Exception:
+    pass
+
 from app.core.config import settings
 from app.providers.base import VoiceProvider
 from app.services.audio_service import FFMPEG_BIN
@@ -146,22 +188,39 @@ class SelfHostedProvider(VoiceProvider):
             return "mps"
         return "cpu"
 
-    def _load_engine_sync(self) -> Any:
-        if self._engine is not None:
+    def _load_engine_sync(self, force_cpu: bool = False) -> Any:
+        if self._engine is not None and not force_cpu:
             return self._engine
         
         logger.info("Initializing Self-Hosted F5-TTS Engine...")
         from f5_tts.api import F5TTS
 
-        device = self._get_device()
+        device = "cpu" if force_cpu else self._get_device()
         logger.info(f"Loading F5TTS ({settings.SELF_HOSTED_MODEL}) on device: {device}")
         
-        engine = F5TTS(
-            model=settings.SELF_HOSTED_MODEL,
-            device=device,
+        hf_cache = os.environ.get("HF_HOME") or (
+            str(Path(settings.DESKTOP_DATA_DIR) / "models") if settings.DESKTOP_DATA_DIR else None
         )
+
+        try:
+            engine = F5TTS(
+                model=settings.SELF_HOSTED_MODEL,
+                device=device,
+                hf_cache_dir=hf_cache,
+            )
+        except Exception as e:
+            if device != "cpu":
+                logger.warning(f"Failed to load F5TTS on {device} ({e}). Falling back to CPU...")
+                device = "cpu"
+                engine = F5TTS(
+                    model=settings.SELF_HOSTED_MODEL,
+                    device=device,
+                    hf_cache_dir=hf_cache,
+                )
+            else:
+                raise
         self._engine = engine
-        logger.info("Self-Hosted F5-TTS Engine initialized successfully.")
+        logger.info(f"Self-Hosted F5-TTS Engine initialized successfully on {device}.")
         return self._engine
 
     async def get_engine(self) -> Any:
@@ -175,9 +234,21 @@ class SelfHostedProvider(VoiceProvider):
     def _load_asr_sync(self) -> Any:
         if self._asr_pipeline is not None:
             return self._asr_pipeline
+        import sys
+        sys.modules["torchcodec"] = None
+        sys.modules["torchcodec.decoders"] = None
+        try:
+            import transformers.utils.import_utils as _hf_iu
+            _hf_iu.is_torchcodec_available = lambda: False
+        except Exception:
+            pass
         from transformers import pipeline
         logger.info("Loading Whisper ASR pipeline for reference audio transcription...")
-        pipe = pipeline("automatic-speech-recognition", model="openai/whisper-tiny", device="cpu")
+        pipe = pipeline(
+            "automatic-speech-recognition",
+            model="openai/whisper-tiny",
+            device="cpu",
+        )
         self._asr_pipeline = pipe
         return self._asr_pipeline
 
@@ -191,15 +262,15 @@ class SelfHostedProvider(VoiceProvider):
 
     def _prepare_reference_audio(self, raw_audio_path: str, target_wav_path: str) -> None:
         """
-        Cleans leading/trailing dead silence, limits duration to prime 12s speech chunk,
+        Cleans leading/trailing dead silence with two-pass reversal, limits duration to prime 15s speech chunk,
         and resamples to 24000 Hz mono 16-bit PCM WAV (F5-TTS native frequency).
         """
         cmd = [
             FFMPEG_BIN,
             "-y",
             "-i", raw_audio_path,
-            "-af", "silenceremove=start_periods=1:start_duration=0.1:start_threshold=-45dB:detection=peak,aformat=sample_fmts=s16:sample_rates=24000:channel_layouts=mono",
-            "-t", "12",
+            "-af", "silenceremove=start_periods=1:start_duration=0.1:start_threshold=-45dB:detection=peak,areverse,silenceremove=start_periods=1:start_duration=0.2:start_threshold=-45dB:detection=peak,areverse,aformat=sample_fmts=s16:sample_rates=24000:channel_layouts=mono",
+            "-t", "15",
             target_wav_path,
         ]
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -207,20 +278,82 @@ class SelfHostedProvider(VoiceProvider):
             logger.warning(f"Audio cleaning filter warning, falling back to direct wav convert: {res.stderr.decode()}")
             fallback_cmd = [
                 FFMPEG_BIN, "-y", "-i", raw_audio_path,
-                "-ar", "24000", "-ac", "1", "-t", "12",
+                "-ar", "24000", "-ac", "1", "-t", "15",
                 target_wav_path
             ]
             subprocess.run(fallback_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def _transcribe_reference(self, audio_path: str) -> str:
-        pipe = self._load_asr_sync()
         try:
-            res = pipe(audio_path)
+            import librosa
+            data, sr = sf.read(str(audio_path), dtype="float32")
+            if data.ndim > 1:
+                data = np.mean(data, axis=1)
+            if sr != 16000:
+                data = librosa.resample(data, orig_sr=sr, target_sr=16000)
+
+            pipe = self._load_asr_sync()
+            res = pipe(
+                {"raw": data, "sampling_rate": 16000},
+                generate_kwargs={"language": "en", "task": "transcribe"},
+            )
             text = res.get("text", "").strip()
             return text
         except Exception as e:
-            logger.warning(f"Whisper transcription failed: {e}")
+            import traceback
+            logger.warning(f"Whisper transcription failed or unavailable: {e}\n{traceback.format_exc()}")
             return ""
+
+    def _get_or_repair_reference_text(self, voice_id: str, voice_dir: Path) -> str:
+        """
+        Reads reference text and automatically detects/repairs corrupted voice profiles
+        that contain boilerplate authorization text instead of verbatim speech.
+        """
+        ref_txt_file = voice_dir / "reference.txt"
+        ref_wav = voice_dir / "reference.wav"
+        ref_text = ""
+
+        if ref_txt_file.exists():
+            try:
+                with open(ref_txt_file, "r", encoding="utf-8") as f:
+                    ref_text = f.read().strip()
+            except Exception:
+                ref_text = ""
+
+        # Detect boilerplate authorization strings
+        is_corrupt = False
+        lower_ref = ref_text.lower()
+        if not ref_text or any(phrase in lower_ref for phrase in [
+            "authorize voicerep",
+            "hereby authorize",
+            "personalized speech synthesis",
+            "authorized speech synthesis",
+        ]):
+            is_corrupt = True
+
+        if is_corrupt and ref_wav.exists():
+            logger.info(f"Self-healing voice profile {voice_id}: re-transcribing reference audio with Whisper ASR...")
+            transcribed = self._transcribe_reference(str(ref_wav))
+            if transcribed and len(transcribed.strip()) > 2:
+                ref_text = transcribed.strip()
+                logger.info(f"Voice profile {voice_id} successfully restored to verbatim transcript: '{ref_text[:60]}...'")
+                try:
+                    with open(ref_txt_file, "w", encoding="utf-8") as f:
+                        f.write(ref_text)
+                    meta_file = voice_dir / "metadata.json"
+                    if meta_file.exists():
+                        with open(meta_file, "r", encoding="utf-8") as mf:
+                            meta = json.load(mf)
+                        meta["ref_text"] = ref_text
+                        with open(meta_file, "w", encoding="utf-8") as mf:
+                            json.dump(meta, mf, indent=2)
+                except Exception as save_err:
+                    logger.warning(f"Failed to persist repaired reference text for {voice_id}: {save_err}")
+
+        if not ref_text:
+            ref_text = "I hereby authorize VoiceRep to clone my voice for authorized speech synthesis."
+
+        return ref_text
 
     async def create_voice(
         self,
@@ -228,6 +361,7 @@ class SelfHostedProvider(VoiceProvider):
         audio_file_path: str,
         description: Optional[str] = None,
         remove_background_noise: bool = False,
+        transcript: Optional[str] = None,
     ) -> dict[str, Any]:
         """
         Registers reference audio for local zero-shot voice cloning.
@@ -244,21 +378,35 @@ class SelfHostedProvider(VoiceProvider):
 
         target_ref_wav = voice_dir / "reference.wav"
 
-        # 1. Prepare pristine reference audio: 24kHz mono, trimmed silences, prime 12s chunk
+        # 1. Prepare pristine reference audio: 24kHz mono, trimmed leading/trailing silences, prime chunk
         await asyncio.to_thread(self._prepare_reference_audio, audio_file_path, str(target_ref_wav))
 
-        # 2. Extract or use exact reference transcript
-        # Priority: explicit transcript provided by user, otherwise auto-transcribe with Whisper
-        ref_text = ""
-        if description and not description.startswith("Cloned for VoiceRep user") and len(description.strip()) > 3:
-            ref_text = description.strip()
+        # 2. Extract or use exact reference transcript (never use description as spoken text)
+        candidate_text = (transcript or "").strip()
 
-        if not ref_text:
-            logger.info(f"Extracting verbatim ASR transcript for {provider_voice_id}...")
-            transcribed = await asyncio.to_thread(self._transcribe_reference, str(target_ref_wav))
-            if transcribed and len(transcribed) > 2:
-                ref_text = transcribed
-                logger.info(f"ASR extracted exact transcript: '{ref_text}'")
+        # Reject boilerplate authorization strings from polluting conditioning text
+        is_boilerplate = False
+        lower_cand = candidate_text.lower()
+        if any(phrase in lower_cand for phrase in [
+            "authorize voicerep",
+            "hereby authorize",
+            "personalized speech synthesis",
+            "authorized speech synthesis",
+        ]):
+            is_boilerplate = True
+
+        ref_text = ""
+        # Primary: Run Whisper ASR on target_ref_wav to capture verbatim ground truth
+        logger.info(f"Extracting verbatim ASR transcript for {provider_voice_id}...")
+        transcribed = await asyncio.to_thread(self._transcribe_reference, str(target_ref_wav))
+        if transcribed and len(transcribed.strip()) > 2:
+            logger.info(f"ASR extracted exact transcript: '{transcribed}'")
+            if candidate_text and not is_boilerplate:
+                ref_text = candidate_text
+            else:
+                ref_text = transcribed.strip()
+        elif candidate_text and not is_boilerplate:
+            ref_text = candidate_text
 
         if not ref_text:
             ref_text = "I hereby authorize VoiceRep to clone my voice for authorized speech synthesis."
@@ -289,8 +437,13 @@ class SelfHostedProvider(VoiceProvider):
         if not meta_file.exists():
             raise KeyError(f"Voice profile {provider_voice_id} not found locally.")
 
+        # Ensure reference text is healed if corrupted
+        ref_text = await asyncio.to_thread(self._get_or_repair_reference_text, provider_voice_id, voice_dir)
+
         with open(meta_file, "r", encoding="utf-8") as f:
-            return json.load(f)
+            meta = json.load(f)
+            meta["ref_text"] = ref_text
+            return meta
 
     async def delete_voice(self, provider_voice_id: str) -> bool:
         voice_dir = self.storage_dir / provider_voice_id
@@ -300,7 +453,7 @@ class SelfHostedProvider(VoiceProvider):
             return True
         return True
 
-    def _synthesize_sync(
+    def _synthesize_sync_inner(
         self,
         voice_id: str,
         text: str,
@@ -310,18 +463,12 @@ class SelfHostedProvider(VoiceProvider):
         engine = self._load_engine_sync()
         voice_dir = self.storage_dir / voice_id
         ref_wav = voice_dir / "reference.wav"
-        ref_txt_file = voice_dir / "reference.txt"
 
         if not ref_wav.exists():
             raise FileNotFoundError(f"Local voice reference audio not found for {voice_id}")
 
-        ref_text = ""
-        if ref_txt_file.exists():
-            with open(ref_txt_file, "r", encoding="utf-8") as f:
-                ref_text = f.read().strip()
-
-        if not ref_text:
-            ref_text = "I hereby authorize VoiceRep to clone my voice for authorized speech synthesis."
+        # Retrieve or automatically heal reference text
+        ref_text = self._get_or_repair_reference_text(voice_id, voice_dir)
 
         # 1. Normalize input text
         norm_text = normalize_speech_text(text)
@@ -334,131 +481,76 @@ class SelfHostedProvider(VoiceProvider):
         # Map similarity boost (0.0 - 1.0) to classifier-free guidance (1.8 - 2.6)
         cfg_strength = 1.8 + (similarity * 0.8)
         if "fast" in (model_id or "").lower():
-            nfe_steps = 16
+            nfe_steps = 24
         else:
-            nfe_steps = max(int(settings.SELF_HOSTED_NFE_STEPS), 32)
+            nfe_steps = max(int(settings.SELF_HOSTED_NFE_STEPS), 36)
 
-        # 3. Phonetic chunking for long sequences (> 180 chars)
-        chunks = chunk_text_by_sentence(norm_text, max_chars=180)
+        safe_seed = random.randint(1, 2147483647)
         logger.info(
-            f"Synthesizing '{norm_text[:40]}...' ({len(chunks)} chunk(s)) with voice {voice_id} "
-            f"(speed={speed}, CFG={cfg_strength:.2f}, steps={nfe_steps})..."
+            f"Synthesizing '{norm_text[:40]}...' with voice {voice_id} "
+            f"(speed={speed}, CFG={cfg_strength:.2f}, steps={nfe_steps}, seed={safe_seed})..."
         )
 
         out_wav_path = voice_dir / f"temp_gen_{uuid.uuid4().hex}.wav"
-        out_mp3_path = voice_dir / f"temp_gen_{uuid.uuid4().hex}.mp3"
-        temp_chunk_paths: list[Path] = []
 
         try:
-            if len(chunks) <= 1:
-                chunk_text = chunks[0] if chunks else norm_text
-                safe_seed = random.randint(1, 2147483647)
-                res = engine.infer(
-                    ref_file=str(ref_wav),
-                    ref_text=ref_text,
-                    gen_text=chunk_text,
-                    speed=speed,
-                    cfg_strength=cfg_strength,
-                    sway_sampling_coef=-1.0,
-                    nfe_step=nfe_steps,
-                    remove_silence=True,
-                    seed=safe_seed,
-                    file_wave=str(out_wav_path),
-                )
-                if (not out_wav_path.exists() or out_wav_path.stat().st_size == 0) and res and res[0] is not None:
-                    wav_arr = res[0]
-                    if hasattr(wav_arr, "detach"):
-                        wav_arr = wav_arr.detach().cpu().numpy()
-                    if wav_arr.ndim > 1:
-                        wav_arr = wav_arr.squeeze()
-                    sr = res[1] or 24000
-                    sf.write(str(out_wav_path), wav_arr, sr)
-            else:
-                # Multi-chunk sequential inference with silence stitching
-                audio_segments: list[np.ndarray] = []
-                sample_rate = 24000
+            # Use F5-TTS native infer which manages chunking, batching, and cross-fading seamlessly
+            res = engine.infer(
+                ref_file=str(ref_wav),
+                ref_text=ref_text,
+                gen_text=norm_text,
+                speed=speed,
+                cfg_strength=cfg_strength,
+                sway_sampling_coef=-1.0,
+                nfe_step=nfe_steps,
+                cross_fade_duration=0.15,
+                remove_silence=True,
+                seed=safe_seed,
+                file_wave=str(out_wav_path),
+            )
 
-                for chunk_text in chunks:
-                    chunk_path = voice_dir / f"temp_chunk_{uuid.uuid4().hex}.wav"
-                    temp_chunk_paths.append(chunk_path)
-                    safe_seed = random.randint(1, 2147483647)
-                    res = engine.infer(
-                        ref_file=str(ref_wav),
-                        ref_text=ref_text,
-                        gen_text=chunk_text,
-                        speed=speed,
-                        cfg_strength=cfg_strength,
-                        sway_sampling_coef=-1.0,
-                        nfe_step=nfe_steps,
-                        remove_silence=True,
-                        seed=safe_seed,
-                        file_wave=str(chunk_path),
-                    )
+            # Ensure valid WAV exists
+            if (not out_wav_path.exists() or out_wav_path.stat().st_size == 0) and res and res[0] is not None:
+                wav_arr = res[0]
+                if hasattr(wav_arr, "detach"):
+                    wav_arr = wav_arr.detach().cpu().numpy()
+                if wav_arr.ndim > 1:
+                    wav_arr = wav_arr.squeeze()
+                sr = res[1] or 24000
+                sf.write(str(out_wav_path), wav_arr, sr)
 
-                    seg = None
-                    if res and res[0] is not None:
-                        seg = res[0]
-                        if hasattr(seg, "detach"):
-                            seg = seg.detach().cpu().numpy()
-                        if seg.ndim > 1:
-                            seg = seg.squeeze()
-                        if len(res) > 1 and res[1]:
-                            sample_rate = res[1]
-                    elif chunk_path.exists() and chunk_path.stat().st_size > 0:
-                        seg, sample_rate = sf.read(str(chunk_path))
-                        if seg.ndim > 1:
-                            seg = seg[:, 0]
+            if not out_wav_path.exists() or out_wav_path.stat().st_size == 0:
+                raise RuntimeError("Audio synthesis produced no valid audio output.")
 
-                    if seg is not None and len(seg) > 0:
-                        audio_segments.append(seg.astype(np.float32))
-
-                if not audio_segments:
-                    raise RuntimeError("Audio synthesis produced no valid audio segments.")
-
-                # Create 150ms natural silence padding between sentences
-                silence_padding = np.zeros(int(sample_rate * 0.15), dtype=np.float32)
-                stitched_audio = []
-                for idx, segment in enumerate(audio_segments):
-                    stitched_audio.append(segment)
-                    if idx < len(audio_segments) - 1:
-                        stitched_audio.append(silence_padding)
-
-                final_wav = np.concatenate(stitched_audio)
-                sf.write(str(out_wav_path), final_wav, sample_rate)
-
-            # Convert generated 24kHz WAV to high-fidelity MP3 (256kbps)
-            try:
-                subprocess.run(
-                    [
-                        FFMPEG_BIN,
-                        "-y",
-                        "-i", str(out_wav_path),
-                        "-c:a", "libmp3lame",
-                        "-b:a", "256k",
-                        "-ar", "24000",
-                        str(out_mp3_path),
-                    ],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    check=True,
-                )
-                with open(out_mp3_path, "rb") as f:
-                    audio_bytes = f.read()
-            except Exception as e:
-                logger.warning(f"FFmpeg MP3 conversion fallback to WAV: {e}")
-                with open(out_wav_path, "rb") as f:
-                    audio_bytes = f.read()
+            # Return pristine uncompressed 24kHz PCM WAV bytes
+            with open(out_wav_path, "rb") as f:
+                audio_bytes = f.read()
 
             return audio_bytes
 
         finally:
             if out_wav_path.exists():
                 out_wav_path.unlink(missing_ok=True)
-            if out_mp3_path.exists():
-                out_mp3_path.unlink(missing_ok=True)
-            for cp in temp_chunk_paths:
-                if cp.exists():
-                    cp.unlink(missing_ok=True)
+
+    def _synthesize_sync(
+        self,
+        voice_id: str,
+        text: str,
+        settings_dict: dict[str, Any],
+        model_id: str,
+    ) -> bytes:
+        try:
+            return self._synthesize_sync_inner(voice_id, text, settings_dict, model_id)
+        except Exception as e:
+            if self._get_device() == "mps" and not getattr(self, "_in_cpu_fallback", False):
+                logger.warning(f"Inference on MPS failed ({e}). Automatically retrying with CPU fallback...")
+                self._in_cpu_fallback = True
+                try:
+                    self._engine = self._load_engine_sync(force_cpu=True)
+                    return self._synthesize_sync_inner(voice_id, text, settings_dict, model_id)
+                finally:
+                    self._in_cpu_fallback = False
+            raise
 
     async def synthesize(
         self,

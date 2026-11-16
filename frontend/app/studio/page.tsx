@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, Check, Copy, Download, FolderOpen, Link as LinkIcon, Loader2, Mic2, Play, RotateCcw, Sparkles, Volume2 } from "lucide-react";
+import { AlertCircle, Check, Copy, Download, FolderOpen, Link as LinkIcon, Loader2, Mic2, Play, RotateCcw, Sparkles, Trash2, Volume2 } from "lucide-react";
 import { PageHeader, SectionTitle } from "@/components/ui/StudioUI";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/api";
 import { Generation, Voice, VoiceSettings } from "@/types";
 import { AudioPlayer } from "@/components/audio/AudioPlayer";
@@ -35,6 +36,27 @@ export default function StudioPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedAction, setCopiedAction] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [genToDelete, setGenToDelete] = useState<Generation | null>(null);
+  const [isDeletingGen, setIsDeletingGen] = useState(false);
+  const [deleteGenError, setDeleteGenError] = useState<string | null>(null);
+
+  const handleConfirmDelete = async () => {
+    if (!genToDelete) return;
+    setIsDeletingGen(true);
+    setDeleteGenError(null);
+    try {
+      await api.deleteGeneration(genToDelete.id);
+      setHistory((prev) => prev.filter((g) => g.id !== genToDelete.id));
+      if (currentGeneration?.id === genToDelete.id) {
+        setCurrentGeneration(null);
+      }
+      setGenToDelete(null);
+    } catch (err: any) {
+      setDeleteGenError(err.message || "Failed to delete recording");
+    } finally {
+      setIsDeletingGen(false);
+    }
+  };
 
   const handleCopy = async (text: string, actionKey: string) => {
     const success = await copyToClipboard(text);
@@ -138,7 +160,27 @@ export default function StudioPage() {
             {currentGeneration.local_file_path && <button type="button" onClick={() => handleCopy(currentGeneration.local_file_path || "", `path-${currentGeneration.id}`)} className="btn btn-secondary text-xs">{copiedAction === `path-${currentGeneration.id}` ? <Check size={14} /> : <Copy size={14} />}{copiedAction === `path-${currentGeneration.id}` ? "Path copied" : "Copy local path"}</button>}
           </div>{currentGeneration.local_file_path && <div className="flex items-center gap-2 text-[10px] text-muted font-mono border-t border-line pt-3"><FolderOpen size={14} className="shrink-0" /><span className="truncate select-all">{currentGeneration.local_file_path}</span></div>}</div></section>;
         })() : <div className="py-8 flex items-center gap-3 text-muted"><Volume2 size={20} strokeWidth={1} /><p className="text-xs">Your generated audio will appear here. Make your first take above.</p></div>}
-      </div><aside className="min-w-0"><VoiceSettingsForm settings={settings} onChange={setSettings} modelId={modelId} onModelChange={setModelId} /><section className="recent-takes"><SectionTitle aside={<span className="eyebrow">LAST 10</span>}>Recent takes</SectionTitle>{history.length === 0 ? <p className="py-6 text-xs text-muted">No previous generations recorded.</p> : <div className="max-h-[400px] overflow-y-auto">{history.map(item => <div key={item.id} className="recent-take"><p className="line-clamp-2">{item.input_text}</p><div className="recent-take-footer"><span className="text-muted font-mono">{item.character_count} CHARS</span>{item.audio_url && <div className="flex gap-3"><button onClick={() => setCurrentGeneration(item)} className="flex items-center gap-1"><Play size={11} />Play</button><button onClick={() => handleDownloadItem(item)} disabled={downloadingId === item.id} aria-label="Download take">{downloadingId === item.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}</button></div>}</div></div>)}</div>}</section></aside></div>
+      </div><aside className="min-w-0"><VoiceSettingsForm settings={settings} onChange={setSettings} modelId={modelId} onModelChange={setModelId} /><section className="recent-takes"><SectionTitle aside={<span className="eyebrow">LAST 10</span>}>Recent takes</SectionTitle>{history.length === 0 ? <p className="py-6 text-xs text-muted">No previous generations recorded.</p> : <div className="max-h-[400px] overflow-y-auto">{history.map(item => <div key={item.id} className="recent-take"><p className="line-clamp-2">{item.input_text}</p><div className="recent-take-footer"><span className="text-muted font-mono">{item.character_count} CHARS</span>{item.audio_url && <div className="flex items-center gap-3"><button onClick={() => setCurrentGeneration(item)} className="flex items-center gap-1"><Play size={11} />Play</button><button onClick={() => handleDownloadItem(item)} disabled={downloadingId === item.id} aria-label="Download take">{downloadingId === item.id ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}</button><button onClick={() => { setGenToDelete(item); setDeleteGenError(null); }} className="flex items-center text-muted hover:text-red-600 transition-colors" title="Delete take" aria-label="Delete take"><Trash2 size={13} /></button></div>}</div></div>)}</div>}</section></aside></div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!genToDelete}
+        title="Delete Recording Take"
+        description={
+          deleteGenError
+            ? `Error deleting take: ${deleteGenError}`
+            : "Are you sure you want to delete this recording take? This will permanently remove this audio file from your workspace."
+        }
+        confirmLabel="Delete Take"
+        isLoading={isDeletingGen}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          if (!isDeletingGen) {
+            setGenToDelete(null);
+            setDeleteGenError(null);
+          }
+        }}
+      />
     </div>
   );
 }

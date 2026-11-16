@@ -6,8 +6,12 @@ import {
   VoiceSettings,
 } from "@/types";
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+export function getBackendUrl(): string {
+  if (typeof window !== "undefined" && (window as any).__VOICEREP_BACKEND_URL__) {
+    return (window as any).__VOICEREP_BACKEND_URL__;
+  }
+  return process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+}
 
 const DEFAULT_DEV_TOKEN =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTExMTExMS0xMTExLTExMTEtMTExMS0xMTExMTExMTExMTEiLCJlbWFpbCI6ImRlbW9Adm9pY2VyZXAubG9jYWwifQ.jl57JKy4e9wZsUXkdw71R5m-1kkTqm3W7HCPGPFvZwQ";
@@ -40,10 +44,20 @@ async function request<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${getBackendUrl()}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (err: any) {
+    if (err?.message === "Load failed" || err?.message === "Failed to fetch") {
+      throw new Error(
+        `Unable to reach VoiceRep backend at ${getBackendUrl()}. Ensure the local engine is active.`
+      );
+    }
+    throw err;
+  }
 
   if (!response.ok) {
     let errorDetail = `Request failed (${response.status})`;
@@ -52,7 +66,11 @@ async function request<T>(
       if (typeof errorJson.detail === "string") {
         errorDetail = errorJson.detail;
       } else if (Array.isArray(errorJson.detail)) {
-        errorDetail = errorJson.detail.map((e: any) => e.msg).join(", ");
+        errorDetail = errorJson.detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(", ");
+      } else if (typeof errorJson.detail === "object" && errorJson.detail !== null) {
+        errorDetail = errorJson.detail.message || JSON.stringify(errorJson.detail);
+      } else if (errorJson.message) {
+        errorDetail = errorJson.message;
       }
     } catch {
       errorDetail = await response.text();
@@ -156,7 +174,32 @@ export const api = {
   },
 
   getPublicCertificate: async (): Promise<string> => {
-    const res = await fetch(`${BACKEND_URL}/api/v1/verify/public-key`);
+    const res = await fetch(`${getBackendUrl()}/api/v1/verify/public-key`);
     return res.text();
+  },
+
+  // Desktop System & Models
+  getDesktopStatus: async (): Promise<any> => {
+    return request<any>("/api/v1/desktop/status");
+  },
+
+  triggerModelDownload: async (): Promise<any> => {
+    return request<any>("/api/v1/desktop/download-models", {
+      method: "POST",
+    });
+  },
+
+  getModelDownloadStatus: async (): Promise<any> => {
+    return request<any>("/api/v1/desktop/download-status");
+  },
+
+  getDesktopJobs: async (): Promise<{ jobs: any[] }> => {
+    return request<{ jobs: any[] }>("/api/v1/desktop/jobs");
+  },
+
+  cancelDesktopJob: async (jobId: string): Promise<any> => {
+    return request<any>(`/api/v1/desktop/jobs/${jobId}/cancel`, {
+      method: "POST",
+    });
   },
 };

@@ -51,7 +51,7 @@ async def upload_local_file(file_path: str, file: UploadFile = File(...)):
     return {"status": "ok", "path": file_path}
 
 
-@router.get("/download/{file_path:path}")
+@router.api_route("/download/{file_path:path}", methods=["GET", "HEAD"])
 async def download_local_file(
     file_path: str,
     download: bool = Query(False, description="Set True to force Content-Disposition attachment"),

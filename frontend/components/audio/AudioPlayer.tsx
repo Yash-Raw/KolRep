@@ -28,6 +28,9 @@ export function AudioPlayer({
     const audio = audioRef.current;
     if (!audio) return;
 
+    setCurrentTime(0);
+    setIsPlaying(autoPlay);
+
     const handleTimeUpdate = () => {
       if (audio.currentTime !== undefined && isFinite(audio.currentTime)) {
         setCurrentTime(audio.currentTime);

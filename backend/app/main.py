@@ -45,10 +45,25 @@ async def lifespan(app: FastAPI):
     logger.info("Starting VoiceRep API server...")
     clean_stale_temp_files()
 
+    # Initialize SQLite database schema automatically when running in desktop mode
+    if settings.VOICEREP_DESKTOP_MODE:
+        try:
+            from app.database.session import init_db
+            await init_db()
+            logger.info("Desktop SQLite database initialized successfully.")
+        except Exception as e:
+            logger.error(f"Desktop database initialization failed: {e}")
+
     # Pre-warm self-hosted engines in the background if configured
     if settings.VOICE_PROVIDER == "self_hosted":
         async def _prewarm():
             try:
+                if settings.VOICEREP_DESKTOP_MODE:
+                    from app.desktop.model_manager import model_manager
+                    if not model_manager.check_model_availability()["all_ready"]:
+                        logger.info("Desktop mode: Neural models not yet downloaded; skipping pre-warming until first-run setup.")
+                        return
+
                 from app.providers.self_hosted import self_hosted_provider
                 logger.info("Pre-warming Self-Hosted F5-TTS and Whisper engines...")
                 await self_hosted_provider.get_engine()
@@ -79,11 +94,15 @@ origins = [
     settings.FRONTEND_URL,
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "tauri://localhost",
+    "http://tauri.localhost",
+    "https://tauri.localhost",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1)(:[0-9]+)?|tauri://.*|https?://tauri\.localhost.*|asset://.*)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

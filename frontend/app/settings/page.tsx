@@ -2,18 +2,26 @@
 
 import { PageHeader } from "@/components/ui/StudioUI";
 import { useEffect, useState } from "react";
-import { Shield, Database, Server, Laptop, RefreshCw, HardDrive, CheckCircle2 } from "lucide-react";
+import { Shield, Database, Server, Laptop, RefreshCw, HardDrive, CheckCircle2, Cpu, Layers } from "lucide-react";
+import { api, getBackendUrl } from "@/lib/api";
 
 export default function SettingsPage() {
   const [backendStatus, setBackendStatus] = useState<any>(null);
+  const [desktopStatus, setDesktopStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [cacheCleared, setCacheCleared] = useState(false);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000"}/api/v1/health`)
-      .then((res) => res.json())
-      .then((data) => setBackendStatus(data))
-      .catch(() => setBackendStatus({ status: "offline" }))
+    Promise.all([
+      fetch(`${getBackendUrl()}/api/v1/health`)
+        .then((res) => res.json())
+        .catch(() => ({ status: "offline" })),
+      api.getDesktopStatus().catch(() => null),
+    ])
+      .then(([health, desktop]) => {
+        setBackendStatus(health);
+        setDesktopStatus(desktop);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -48,22 +56,84 @@ export default function SettingsPage() {
             </div>
 
             <div className="p-4 rounded-lg bg-canvas  border border-line/60  space-y-1">
-              <span className="text-xs text-muted font-medium">PostgreSQL Database</span>
+              <span className="text-xs text-muted font-medium">Database</span>
               <p className="font-semibold text-sm capitalize text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                {backendStatus?.database === "healthy" ? "Healthy (Local PostgreSQL)" : "Checking"}
+                {backendStatus?.desktop_mode
+                  ? "Healthy (Local SQLite - Offline)"
+                  : backendStatus?.database === "healthy"
+                  ? "Healthy (Local PostgreSQL)"
+                  : "Checking"}
               </p>
             </div>
 
             <div className="p-4 rounded-lg bg-canvas  border border-line/60  space-y-1">
-              <span className="text-xs text-muted font-medium">Redis / ARQ Worker</span>
+              <span className="text-xs text-muted font-medium">Background Job Queue</span>
               <p className="font-semibold text-sm capitalize text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                {backendStatus?.redis === "healthy" ? "Healthy (Local Redis)" : "Checking"}
+                {backendStatus?.desktop_mode || backendStatus?.redis?.includes("desktop mode")
+                  ? "Active (Local Desktop In-Memory Queue)"
+                  : backendStatus?.redis === "healthy"
+                  ? "Healthy (Local Redis)"
+                  : "Connecting"}
               </p>
             </div>
           </div>
         </div>
+
+        {/* Neural Hardware Acceleration & Models */}
+        {desktopStatus && (
+          <div className="settings-section space-y-5">
+            <div className="flex items-center gap-2.5 pb-2 border-b border-line ">
+              <Cpu className="h-5 w-5 text-emerald-500" />
+              <h3 className="font-semibold text-base text-ink ">Neural Inference & Acceleration</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="p-3.5 rounded-lg bg-canvas border border-line/60 space-y-1">
+                <span className="text-muted font-medium">Hardware Backend</span>
+                <p className="font-semibold text-ink text-sm flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  {desktopStatus.is_apple_silicon ? "Apple Silicon (MPS Hardware Accelerated)" : desktopStatus.device?.toUpperCase() || "CPU"}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-lg bg-canvas border border-line/60 space-y-1">
+                <span className="text-muted font-medium">FFmpeg Audio Engine</span>
+                <p className="font-semibold text-ink text-sm flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  {desktopStatus.ffmpeg?.available ? "Detected & Connected" : "Missing"}
+                </p>
+              </div>
+            </div>
+
+            {/* Models Status */}
+            <div className="space-y-2 pt-1">
+              <span className="text-xs text-muted font-semibold uppercase tracking-wider">Neural Model Weights</span>
+              <div className="grid grid-cols-1 gap-2">
+                {desktopStatus.models?.ready_models?.map((m: any) => (
+                  <div key={m.id} className="p-3 rounded-md bg-canvas border border-line/60 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <Layers className="h-3.5 w-3.5 text-muted" />
+                      <span className="font-medium text-ink">{m.name}</span>
+                    </div>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded text-[11px]">
+                      Ready ({m.approx_size_mb} MB)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Storage Info */}
+            {desktopStatus.models?.disk_space && (
+              <div className="p-3 rounded-md bg-canvas border border-line/60 text-xs text-muted flex items-center justify-between">
+                <span>Free Disk Space</span>
+                <span className="font-mono font-medium text-ink">{desktopStatus.models.disk_space.free_gb} GB Available</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Pure Local Desktop Mode */}
         <div className="settings-section space-y-5">

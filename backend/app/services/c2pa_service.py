@@ -16,7 +16,25 @@ from app.core.config import settings
 
 logger = logging.getLogger("voicerep.c2pa")
 
-KEY_DIR = Path(settings.STORAGE_LOCAL_DIR if hasattr(settings, "STORAGE_LOCAL_DIR") else "./storage") / "keys"
+
+def _get_key_dir() -> Path:
+    storage_dir = (
+        getattr(settings, "LOCAL_STORAGE_PATH", None)
+        or getattr(settings, "STORAGE_LOCAL_DIR", None)
+        or "./storage"
+    )
+    path = Path(storage_dir)
+    if not path.is_absolute():
+        if getattr(settings, "VOICEREP_DESKTOP_MODE", False) and getattr(settings, "DESKTOP_DATA_DIR", None):
+            path = Path(settings.DESKTOP_DATA_DIR) / path
+        elif getattr(settings, "VOICEREP_DESKTOP_MODE", False):
+            path = Path.home() / "Library" / "Application Support" / "VoiceRep" / path
+        else:
+            path = Path.cwd() / path
+    return path / "keys"
+
+
+KEY_DIR = _get_key_dir()
 KEY_FILE = KEY_DIR / "c2pa_private.key"
 CERT_FILE = KEY_DIR / "c2pa_certificate.crt"
 
@@ -44,8 +62,18 @@ class C2PAService:
 
     def _init_keys(self):
         """Loads existing X.509 keypair or generates a new platform signing identity."""
+        global KEY_DIR, KEY_FILE, CERT_FILE
         try:
             KEY_DIR.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            logger.warning(f"Could not create keys directory at {KEY_DIR}: {e}. Falling back to user application support...")
+            fallback_dir = Path.home() / "Library" / "Application Support" / "VoiceRep" / "storage" / "keys"
+            fallback_dir.mkdir(parents=True, exist_ok=True)
+            KEY_DIR = fallback_dir
+            KEY_FILE = KEY_DIR / "c2pa_private.key"
+            CERT_FILE = KEY_DIR / "c2pa_certificate.crt"
+
+        try:
             if KEY_FILE.exists() and CERT_FILE.exists():
                 with open(KEY_FILE, "rb") as f:
                     self._private_key = serialization.load_pem_private_key(f.read(), password=None)

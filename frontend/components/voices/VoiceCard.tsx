@@ -8,12 +8,10 @@ import { Voice } from "@/types";
 interface VoiceCardProps {
   voice: Voice;
   onRename: (voice: Voice) => void;
-  onDelete: (id: string) => void;
+  onDelete: (voice: Voice) => void;
 }
 
 export function VoiceCard({ voice, onRename, onDelete }: VoiceCardProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const getStatusBadge = (status: Voice["status"]) => {
     switch (status) {
       case "ready":
@@ -52,22 +50,11 @@ export function VoiceCard({ voice, onRename, onDelete }: VoiceCardProps) {
     }
   };
 
-  const handleDeleteClick = async () => {
-    if (confirm(`Are you sure you want to permanently delete voice "${voice.name}"?`)) {
-      setIsDeleting(true);
-      try {
-        await onDelete(voice.id);
-      } finally {
-        setIsDeleting(false);
-      }
-    }
-  };
-
   return (
     <article className="voice-sleeve">
       <div className="sleeve-art" aria-hidden="true" />
       <div className="sleeve-content"><h2 className="sleeve-title">{voice.name}</h2><p className="eyebrow">{voice.language || "English"} / VOICE PROFILE</p><div className="sleeve-meta">{getStatusBadge(voice.status)}{voice.audio_duration && <span className="mono">{voice.audio_duration.toFixed(1)}s</span>}</div>{voice.quality_report?.quality && <p className="text-xs text-muted capitalize mt-3">Audio quality: {voice.quality_report.quality}</p>}</div>
-      <div className="sleeve-actions"><div className="flex flex-wrap gap-2">{voice.status === "ready" && <Link href={`/studio?voice=${voice.id}`} className="flex items-center gap-1.5 text-xs font-medium text-accent"><Sparkles size={13} />Use in studio</Link>}</div><div className="flex gap-1"><button onClick={() => onRename(voice)} title="Rename voice" aria-label={`Rename ${voice.name}`} className="p-2 text-muted hover:text-ink"><Edit2 size={14} /></button><button onClick={handleDeleteClick} disabled={isDeleting} title="Delete voice" aria-label={`Delete ${voice.name}`} className="p-2 text-muted hover:text-red-600"><Trash2 size={14} /></button></div></div>
+      <div className="sleeve-actions"><div className="flex flex-wrap gap-2">{voice.status === "ready" && <Link href={`/studio?voice=${voice.id}`} className="flex items-center gap-1.5 text-xs font-medium text-accent"><Sparkles size={13} />Use in studio</Link>}</div><div className="flex gap-1"><button onClick={() => onRename(voice)} title="Rename voice" aria-label={`Rename ${voice.name}`} className="p-2 text-muted hover:text-ink"><Edit2 size={14} /></button><button onClick={() => onDelete(voice)} title="Delete voice" aria-label={`Delete ${voice.name}`} className="p-2 text-muted hover:text-red-600 transition-colors"><Trash2 size={14} /></button></div></div>
     </article>
   );
 }

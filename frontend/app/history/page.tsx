@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, Check, Copy, Download, FolderOpen, History, Link as LinkIcon, Loader2, Play, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, Check, Copy, Download, FolderOpen, History, Link as LinkIcon, Loader2, Play, Shield, Sparkles, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/StudioUI";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/api";
 import { Generation, Voice } from "@/types";
 import { AudioPlayer } from "@/components/audio/AudioPlayer";
@@ -17,6 +18,9 @@ export default function HistoryPage() {
   const [activeAudioUrl, setActiveAudioUrl] = useState<string | null>(null);
   const [copiedAction, setCopiedAction] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [genToDelete, setGenToDelete] = useState<Generation | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDownload = async (gen: Generation) => {
     if (!gen.audio_url || downloadingId) return;
@@ -67,15 +71,21 @@ export default function HistoryPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this generation?")) {
-      try {
-        await api.deleteGeneration(id);
-        setGenerations((prev) => prev.filter((g) => g.id !== id));
-        if (activeAudioUrl) setActiveAudioUrl(null);
-      } catch (err: any) {
-        alert(`Failed to delete generation: ${err.message}`);
+  const handleConfirmDelete = async () => {
+    if (!genToDelete) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.deleteGeneration(genToDelete.id);
+      setGenerations((prev) => prev.filter((g) => g.id !== genToDelete.id));
+      if (activeAudioUrl && genToDelete.audio_url && activeAudioUrl.includes(genToDelete.id)) {
+        setActiveAudioUrl(null);
       }
+      setGenToDelete(null);
+    } catch (err: any) {
+      setDeleteError(err.message || "Failed to delete generation");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -148,6 +158,12 @@ export default function HistoryPage() {
                     <span className="text-[11px] font-mono text-muted">
                       {gen.character_count} chars
                     </span>
+                    {gen.is_watermarked && (
+                      <span className="inline-flex items-center gap-1 font-mono text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full font-semibold">
+                        <Shield className="h-2.5 w-2.5" />
+                        C2PA Signed
+                      </span>
+                    )}
                   </div>
 
                   <p className="history-text line-clamp-2">
@@ -218,9 +234,13 @@ export default function HistoryPage() {
                   )}
 
                   <button
-                    onClick={() => handleDelete(gen.id)}
+                    onClick={() => {
+                      setGenToDelete(gen);
+                      setDeleteError(null);
+                    }}
                     className="p-2 rounded-lg text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                     title="Delete generation"
+                    aria-label="Delete generation"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -230,6 +250,26 @@ export default function HistoryPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!genToDelete}
+        title="Delete Recording"
+        description={
+          deleteError
+            ? `Error deleting recording: ${deleteError}`
+            : "Are you sure you want to delete this generation? This will permanently remove this audio recording and its provenance record from your device."
+        }
+        confirmLabel="Delete Recording"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          if (!isDeleting) {
+            setGenToDelete(null);
+            setDeleteError(null);
+          }
+        }}
+      />
     </div>
   );
 }

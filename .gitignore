@@ -25,8 +25,8 @@ backend/venv/
 .coverage
 htmlcov/
 *.egg-info/
-dist/
-build/
+/dist/
+/build/
 
 # Local data & storage
 storage/
@@ -43,3 +43,15 @@ backend/.env
 VoiceRep-master build specification.md
 docs/
 design/screenshots
+
+# Temporary test & browser automation files
+.playwright-mcp/
+
+# Native Desktop build outputs & binaries
+*.dmg
+*.sha256
+desktop/build/
+desktop/dist/
+desktop/src-tauri/target/
+desktop/src-tauri/resources/engine/
+website/.openai/

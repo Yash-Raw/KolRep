@@ -240,22 +240,32 @@ class WatermarkService:
         out_path = f"/tmp/out_{uuid.uuid4()}" + (".mp3" if is_mp3 else ".wav")
 
         try:
-            # Decode audio to PCM WAV using ffmpeg (handles MP3, AAC, OGG, WAV seamlessly)
-            conv_cmd = [
-                FFMPEG_BIN,
-                "-y",
-                "-i", "pipe:0",
-                "-vn",
-                "-acodec", "pcm_s16le",
-                "-ar", str(self.target_sr),
-                "-ac", "1",
-                in_wav_path,
-            ]
-            proc = subprocess.run(conv_cmd, input=audio_bytes, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+            # Decode audio to PCM WAV (if WAV bytes, load directly in memory without disk I/O)
+            data = None
+            sr = self.target_sr
+            if audio_bytes.startswith(b"RIFF"):
+                try:
+                    data, sr = sf.read(io.BytesIO(audio_bytes), dtype="float32")
+                    if data.ndim > 1:
+                        data = data[:, 0]
+                except Exception:
+                    data = None
 
-            data, sr = sf.read(in_wav_path)
-            if data.ndim > 1:
-                data = data[:, 0]
+            if data is None:
+                conv_cmd = [
+                    FFMPEG_BIN,
+                    "-y",
+                    "-i", "pipe:0",
+                    "-vn",
+                    "-acodec", "pcm_s16le",
+                    "-ar", str(self.target_sr),
+                    "-ac", "1",
+                    in_wav_path,
+                ]
+                proc = subprocess.run(conv_cmd, input=audio_bytes, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                data, sr = sf.read(in_wav_path)
+                if data.ndim > 1:
+                    data = data[:, 0]
 
             watermarked_pcm = self.embed_watermark_in_pcm(
                 data,

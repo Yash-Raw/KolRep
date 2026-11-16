@@ -45,6 +45,7 @@ async def test_self_hosted_create_get_delete_voice(temp_voice_dir, fake_wav_file
         name="Morgan Freeman Clone",
         audio_file_path=fake_wav_file,
         description="A warm, resonant narration voice clone",
+        transcript="A warm, resonant narration voice clone",
     )
 
     assert "voice_id" in res
@@ -199,8 +200,9 @@ async def test_long_text_phonetic_chunking_and_stitching(temp_voice_dir, fake_wa
         audio_bytes = await provider.synthesize(voice_id, long_paragraph, {})
         assert isinstance(audio_bytes, bytes)
         assert len(audio_bytes) > 0
-        # Engine infer was called once per chunk
-        assert mock_engine.infer.call_count == len(chunks)
+        # Engine infer utilizes native F5-TTS batching with cross-fade
+        assert mock_engine.infer.call_count >= 1
+        assert mock_engine.infer.call_args[1]["cross_fade_duration"] == 0.15
 
 
 def test_storage_path_traversal_security_guard():

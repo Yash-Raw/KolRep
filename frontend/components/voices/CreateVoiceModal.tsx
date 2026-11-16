@@ -100,7 +100,8 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
 
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        const recFile = new File([audioBlob], `mic_recording_${Date.now()}.webm`, {
+        const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+        const recFile = new File([audioBlob], `mic_recording_${Date.now()}.${ext}`, {
           type: mimeType,
         });
         setFile(recFile);
@@ -109,9 +110,6 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
 
         if (!voiceName) {
           setVoiceName("My Cloned Voice");
-        }
-        if (!transcript) {
-          setTranscript("I authorize VoiceRep to clone my voice for personalized speech synthesis.");
         }
       };
 
@@ -278,7 +276,23 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
                 <div className="flex border-b border-line  mb-4">
                   <button
                     type="button"
-                    onClick={() => setMode("upload")}
+                    onClick={() => {
+                      if (mode !== "upload") {
+                        stopRecordingCleanup();
+                        setMode("upload");
+                        if (file && file.name.startsWith("mic_recording_")) {
+                          setFile(null);
+                        }
+                        if (recordedAudioUrl) {
+                          URL.revokeObjectURL(recordedAudioUrl);
+                          setRecordedAudioUrl(null);
+                        }
+                        if (transcript === "I authorize VoiceRep to clone my voice for personalized speech synthesis.") {
+                          setTranscript("");
+                        }
+                        setErrorMessage(null);
+                      }
+                    }}
                     className={`pb-2 text-xs font-semibold px-3 border-b-2 transition-all ${
                       mode === "upload"
                         ? "border-ink  text-ink "
@@ -292,7 +306,15 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMode("record")}
+                    onClick={() => {
+                      if (mode !== "record") {
+                        setMode("record");
+                        if (file && !file.name.startsWith("mic_recording_")) {
+                          setFile(null);
+                        }
+                        setErrorMessage(null);
+                      }
+                    }}
                     className={`pb-2 text-xs font-semibold px-3 border-b-2 transition-all ${
                       mode === "record"
                         ? "border-ink  text-ink "

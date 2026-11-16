@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -10,7 +11,7 @@ from app.models.generation import Generation
 from app.models.voice import Voice
 from app.providers import get_voice_provider, self_hosted_provider
 from app.schemas.generation import GenerationCreate
-from app.services.audio_service import audio_service
+from app.services.audio_service import FFMPEG_BIN, audio_service
 from app.services.c2pa_service import c2pa_service
 from app.services.storage_service import storage_service
 from app.services.watermark_service import watermark_service
@@ -91,7 +92,38 @@ class StudioService:
                 )
             except Exception as wm_err:
                 logger.warning(f"Acoustic watermarking fallback: {wm_err}")
-                watermarked_bytes = audio_bytes
+                if audio_bytes.startswith(b"RIFF"):
+                    # Transcode pristine WAV to 256k MP3
+                    tmp_wav = f"/tmp/fallback_{gen_id}.wav"
+                    tmp_mp3 = f"/tmp/fallback_{gen_id}.mp3"
+                    try:
+                        with open(tmp_wav, "wb") as f:
+                            f.write(audio_bytes)
+                        subprocess.run(
+                            [
+                                FFMPEG_BIN,
+                                "-y",
+                                "-i", tmp_wav,
+                                "-c:a", "libmp3lame",
+                                "-b:a", "256k",
+                                "-ar", "24000",
+                                tmp_mp3,
+                            ],
+                            check=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                        )
+                        with open(tmp_mp3, "rb") as f:
+                            watermarked_bytes = f.read()
+                    except Exception:
+                        watermarked_bytes = audio_bytes
+                    finally:
+                        if os.path.exists(tmp_wav):
+                            os.remove(tmp_wav)
+                        if os.path.exists(tmp_mp3):
+                            os.remove(tmp_mp3)
+                else:
+                    watermarked_bytes = audio_bytes
 
             # 2. Cryptographically sign C2PA manifest & embed into media container (out-of-band provenance)
             signed_envelope = None
