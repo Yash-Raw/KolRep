@@ -17,6 +17,8 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$ROOT_DIR"
 
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$HOME/.cargo/bin:/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin:$PATH"
+export CI=true
+export NEXT_TELEMETRY_DISABLED=1
 
 # 1. Build Next.js Static Export
 echo ""

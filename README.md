@@ -96,7 +96,7 @@ Every generated waveform embeds **Dual-Layer Deepfake Protection**: an in-band i
 
 For macOS Apple Silicon (M1/M2/M3/M4) users who want a 1-click standalone desktop app with zero dependencies (no Python, Node.js, Docker, PostgreSQL, Redis, or FFmpeg required):
 
-1. **[Download VoiceRep_1.0.0_aarch64.dmg](https://github.com/Yash-Raw/VoiceRep/releases/download/v1.0.0/VoiceRep_1.0.0_aarch64.dmg)** (SHA-256: `af2ebc82d094b55f88f3bd9ef05d1b8708bfe420773a8d83232ead518543975b`).
+1. **[Download VoiceRep_1.0.0_aarch64.dmg](https://github.com/Yash-Raw/VoiceRep/releases/download/v1.0.0/VoiceRep_1.0.0_aarch64.dmg)** (SHA-256: `91c5bb06bb55ac73fc526605426b26ae1f2228a1a87288f96dda68daac7d8209`).
 2. Open the disk image and drag **VoiceRep.app** into your **Applications** folder.
 3. Launch **VoiceRep** and complete the first-time model setup via the in-app modal.
 
