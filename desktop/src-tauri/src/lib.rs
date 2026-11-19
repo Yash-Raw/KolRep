@@ -152,6 +152,26 @@ fn spawn_backend(
         }
     }
 
+    let ffprobe_candidates = [
+        resource_dir.as_ref().map(|r| r.join("resources").join("bin").join("ffprobe")),
+        resource_dir.as_ref().map(|r| r.join("bin").join("ffprobe")),
+        Some(PathBuf::from("../../desktop/src-tauri/resources/bin/ffprobe")),
+        Some(PathBuf::from("desktop/src-tauri/resources/bin/ffprobe")),
+        Some(PathBuf::from("/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/ffprobe")),
+        Some(PathBuf::from("/opt/homebrew/bin/ffprobe")),
+    ];
+    for fc in ffprobe_candidates.into_iter().flatten() {
+        if fc.exists() {
+            cmd.env("VOICEREP_FFPROBE_PATH", &fc);
+            if let Some(parent) = fc.parent() {
+                if !extra_path_dirs.contains(&parent.to_path_buf()) {
+                    extra_path_dirs.push(parent.to_path_buf());
+                }
+            }
+            break;
+        }
+    }
+
     // Ensure child backend process has comprehensive PATH (FFmpeg, Homebrew, Conda)
     let current_path = std::env::var("PATH").unwrap_or_else(|_| "/usr/bin:/bin:/usr/sbin:/sbin".to_string());
     let mut path_elements: Vec<String> = extra_path_dirs.iter().map(|p| p.to_string_lossy().to_string()).collect();

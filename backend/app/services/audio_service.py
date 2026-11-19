@@ -89,6 +89,82 @@ class AudioService:
             logger.error(f"Failed to probe file: {e}")
             raise ValueError(f"Could not read audio file metadata: {e}")
 
+    def get_audio_duration(self, file_path: str, audio_stream: dict, format_info: dict) -> float:
+        """Extract audio duration using stream/format metadata, tags, or decoding via ffmpeg."""
+        # 1. Try format/stream duration metadata if valid float > 0
+        for source in (audio_stream.get("duration"), format_info.get("duration")):
+            if source is not None and str(source).strip().lower() not in ("n/a", "none", "nan", "inf", ""):
+                try:
+                    dur = float(source)
+                    if dur > 0:
+                        return dur
+                except (ValueError, TypeError):
+                    pass
+
+        # 2. Try duration from stream tags or format tags (e.g. DURATION in Matroska/WebM)
+        tags = audio_stream.get("tags") or {}
+        format_tags = format_info.get("tags") or {}
+        for tag_dict in (tags, format_tags):
+            tag_dur = tag_dict.get("DURATION") or tag_dict.get("duration")
+            if tag_dur:
+                try:
+                    dur = float(tag_dur)
+                    if dur > 0:
+                        return dur
+                except ValueError:
+                    parts = str(tag_dur).strip().split(":")
+                    if len(parts) == 3:
+                        try:
+                            dur = int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+                            if dur > 0:
+                                return dur
+                        except ValueError:
+                            pass
+
+        # 3. Fast decode via ffmpeg null muxer to find exact audio duration
+        # (Essential for WebM and fragmented MP4 created by browser MediaRecorder where container header lacks duration)
+        try:
+            cmd = [
+                self.ffmpeg_path,
+                "-nostats",
+                "-i", file_path,
+                "-vn",
+                "-f", "null",
+                "-",
+            ]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            time_matches = re.findall(r"time=(\d+):(\d+):([\d\.]+)", res.stderr)
+            if time_matches:
+                h, m, s = time_matches[-1]
+                dur = int(h) * 3600 + int(m) * 60 + float(s)
+                if dur > 0:
+                    return dur
+        except Exception as e:
+            logger.warning(f"Could not determine duration via ffmpeg decode: {e}")
+
+        # 4. Fallback: Convert to WAV and probe the standardized WAV header
+        try:
+            temp_wav = self.extract_or_convert_to_wav(file_path)
+            try:
+                wav_info = self.probe_file(temp_wav)
+                wav_format = wav_info.get("format", {})
+                wav_stream = next((s for s in wav_info.get("streams", []) if s.get("codec_type") == "audio"), {})
+                dur_source = wav_stream.get("duration") or wav_format.get("duration")
+                if dur_source is not None and str(dur_source).strip().lower() not in ("n/a", "none", "nan", "inf", ""):
+                    dur = float(dur_source)
+                    if dur > 0:
+                        return dur
+            finally:
+                if os.path.exists(temp_wav):
+                    try:
+                        os.remove(temp_wav)
+                    except OSError:
+                        pass
+        except Exception as e:
+            logger.warning(f"Could not determine duration via WAV conversion: {e}")
+
+        raise ValueError("Unable to determine audio duration.")
+
     def analyze_audio_stream(self, file_path: str) -> AudioQualityReport:
         """Analyze audio characteristics: duration, sample rate, channels, silence, clipping."""
         info = self.probe_file(file_path)
@@ -101,13 +177,9 @@ class AudioService:
             raise ValueError("No audio stream found in the uploaded file.")
 
         format_name = format_info.get("format_name", "").lower()
-        duration_str = audio_stream.get("duration") or format_info.get("duration")
-        if not duration_str:
-            raise ValueError("Unable to determine audio duration.")
-
-        duration = float(duration_str)
-        sample_rate = int(audio_stream.get("sample_rate", 44100))
-        channels = int(audio_stream.get("channels", 1))
+        duration = self.get_audio_duration(file_path, audio_stream, format_info)
+        sample_rate = int(audio_stream.get("sample_rate") or 44100)
+        channels = int(audio_stream.get("channels") or 1)
 
         # Check container extension/format against allowed list
         matched_ext = None

@@ -83,13 +83,19 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
       });
       streamRef.current = stream;
 
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/mp4";
+      let mimeType = "";
+      if (typeof MediaRecorder !== "undefined" && typeof MediaRecorder.isTypeSupported === "function") {
+        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+          mimeType = "audio/webm;codecs=opus";
+        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+          mimeType = "audio/webm";
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = "audio/mp4";
+        }
+      }
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      const options: MediaRecorderOptions = mimeType ? { mimeType } : {};
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (e) => {
@@ -99,10 +105,17 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+        // Stop audio capture tracks cleanly after final recording chunk is emitted
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+
+        const effectiveType = mediaRecorder.mimeType || mimeType || "audio/webm";
+        const audioBlob = new Blob(audioChunksRef.current, { type: effectiveType });
+        const ext = effectiveType.includes("mp4") ? "mp4" : effectiveType.includes("ogg") ? "ogg" : "webm";
         const recFile = new File([audioBlob], `mic_recording_${Date.now()}.${ext}`, {
-          type: mimeType,
+          type: effectiveType,
         });
         setFile(recFile);
         const url = URL.createObjectURL(audioBlob);
@@ -134,7 +147,18 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
   };
 
   const stopRecording = () => {
-    stopRecordingCleanup();
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (err) {
+        // ignore
+      }
+    }
+    setIsRecording(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,6 +180,10 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
   const handleNextToConsent = () => {
     if (!file) {
       setErrorMessage("Please upload or record an audio sample first.");
+      return;
+    }
+    if (mode === "record" && recordSeconds > 0 && recordSeconds < 5) {
+      setErrorMessage("Recorded audio sample is shorter than 5 seconds. Please record for at least 5 to 10 seconds.");
       return;
     }
     if (!voiceName.trim()) {

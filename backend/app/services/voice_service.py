@@ -41,7 +41,19 @@ class VoiceService:
             )
 
         # Save temporarily for ffmpeg validation
-        ext = os.path.splitext(file.filename or "")[1].lower() or ".mp3"
+        ext = os.path.splitext(file.filename or "")[1].lower()
+        if not ext:
+            content_type = (file.content_type or "").lower()
+            if "webm" in content_type:
+                ext = ".webm"
+            elif "mp4" in content_type:
+                ext = ".mp4"
+            elif "wav" in content_type:
+                ext = ".wav"
+            elif "ogg" in content_type:
+                ext = ".ogg"
+            else:
+                ext = ".mp3"
         temp_input = f"/tmp/upload_{uuid.uuid4()}{ext}"
         try:
             with open(temp_input, "wb") as f:

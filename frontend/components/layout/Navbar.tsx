@@ -39,7 +39,7 @@ export function Navbar() {
     return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", keydown); window.removeEventListener("resize", resize); previous?.focus(); };
   }, [open]);
 
-  if (pathname === "/") return <header className="landing-header"><Brand href="/" /><div className="landing-header-actions"><Link href="/voices">Voice library</Link><Link href="/studio" className="btn btn-primary">Open studio <ArrowUpRight size={15} /></Link></div></header>;
+  if (pathname === "/") return <header className="landing-header"><Brand href="/" /><div className="landing-header-actions"><Link href="/voices">Voice library</Link><Link href="/verify">Verify audio</Link><Link href="/studio" className="btn btn-primary">Open studio <ArrowUpRight size={15} /></Link></div></header>;
   const current = navItems.find(item => pathname.startsWith(item.href));
   return <>
     {open && <button className="nav-backdrop" aria-label="Close navigation" onClick={() => setOpen(false)} />}
