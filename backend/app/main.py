@@ -14,7 +14,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-logger = logging.getLogger("voicerep.app")
+logger = logging.getLogger("kolrep.app")
 
 
 def clean_stale_temp_files() -> None:
@@ -42,7 +42,7 @@ def clean_stale_temp_files() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting VoiceRep API server...")
+    logger.info("Starting KolRep API server...")
     clean_stale_temp_files()
 
     # Pre-warm self-hosted engines in the background if configured
@@ -61,12 +61,12 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    logger.info("Shutting down VoiceRep API server...")
+    logger.info("Shutting down KolRep API server...")
     clean_stale_temp_files()
 
 
 app = FastAPI(
-    title="VoiceRep API",
+    title="KolRep API",
     description="100% Local AI Voice Replication & Studio Narration Platform",
     version="1.0.0",
     lifespan=lifespan,
@@ -106,7 +106,7 @@ app.include_router(api_v1_router)
 @app.get("/")
 async def root():
     return {
-        "service": "VoiceRep API",
+        "service": "KolRep API",
         "version": "1.0.0",
         "docs": "/docs",
         "health": "/api/v1/health",

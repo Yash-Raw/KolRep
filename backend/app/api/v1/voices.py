@@ -10,7 +10,7 @@ from app.schemas.voice import VoiceCreate, VoiceListResponse, VoiceResponse, Voi
 from app.services.storage_service import storage_service
 from app.services.voice_service import voice_service
 
-logger = logging.getLogger("voicerep.api.voices")
+logger = logging.getLogger("kolrep.api.voices")
 router = APIRouter(tags=["Voices"])
 
 

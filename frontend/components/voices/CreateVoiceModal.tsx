@@ -111,7 +111,7 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
           setVoiceName("My Cloned Voice");
         }
         if (!transcript) {
-          setTranscript("I authorize VoiceRep to clone my voice for personalized speech synthesis.");
+          setTranscript("I authorize KolRep to clone my voice for personalized speech synthesis.");
         }
       };
 
@@ -345,7 +345,7 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
                         </span>
                       </div>
                       <p className="text-xs italic text-ink  bg-paper  p-3 rounded-lg border border-line   leading-relaxed">
-                        &ldquo;I authorize VoiceRep to clone my voice for personalized speech synthesis.&rdquo;
+                        &ldquo;I authorize KolRep to clone my voice for personalized speech synthesis.&rdquo;
                       </p>
                     </div>
 
@@ -505,7 +505,7 @@ export function CreateVoiceModal({ isOpen, onClose, onSuccess }: CreateVoiceModa
                   className="mt-0.5 rounded border-line  text-ink"
                 />
                 <span>
-                  I confirm that I have explicit authorization to clone this voice. I understand this synthetic profile will be used exclusively within VoiceRep and can be revoked at any time.
+                  I confirm that I have explicit authorization to clone this voice. I understand this synthetic profile will be used exclusively within KolRep and can be revoked at any time.
                 </span>
               </label>
 

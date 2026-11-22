@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.database.session import get_db
 
-logger = logging.getLogger("voicerep.health")
+logger = logging.getLogger("kolrep.health")
 router = APIRouter(tags=["Health"])
 
 

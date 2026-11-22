@@ -13,7 +13,7 @@ import soundfile as sf
 
 from app.services.audio_service import FFMPEG_BIN
 
-logger = logging.getLogger("voicerep.watermark")
+logger = logging.getLogger("kolrep.watermark")
 
 # 16-bit Barker-inspired synchronization word
 SYNC_BITS = [1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1]
@@ -227,7 +227,7 @@ class WatermarkService:
             "timestamp": ts,
             "user_hash": f"{u_hash:08x}",
             "gen_hash": f"{g_hash:08x}",
-            "protocol": "VoiceRep-QIM-HAS-v1",
+            "protocol": "KolRep-QIM-HAS-v1",
         }
 
         # Write input to temp file to read via soundfile / ffmpeg

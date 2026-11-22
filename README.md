@@ -1,4 +1,4 @@
-# VoiceRep — 100% Local AI Voice Cloning Platform
+# KolRep — 100% Local AI Voice Cloning Platform
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL_3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-green.svg)](https://python.org)
@@ -10,7 +10,7 @@
 
 > **Clone an authorized voice locally in seconds. Power high-fidelity studio narration with dual-layer C2PA cryptographic watermarking, zero cloud costs, and 100% privacy.**
 
-VoiceRep is an enterprise-grade, open-source AI voice platform engineered for **100% local, self-hosted execution**. Built on modern **Conditional Flow Matching Diffusion Transformers (F5-TTS DiT)** and **Whisper ASR**, VoiceRep requires zero external APIs, zero credit cards, and zero cloud bills.
+KolRep is an enterprise-grade, open-source AI voice platform engineered for **100% local, self-hosted execution**. Built on modern **Conditional Flow Matching Diffusion Transformers (F5-TTS DiT)** and **Whisper ASR**, KolRep requires zero external APIs, zero credit cards, and zero cloud bills.
 
 Every generated waveform embeds **Dual-Layer Deepfake Protection**: an in-band imperceptible acoustic watermark surviving lossy compression, and an out-of-band X.509 digitally signed C2PA provenance manifest conforming to **EU AI Act Article 50** and **US Executive Order 14110**.
 
@@ -19,7 +19,7 @@ Every generated waveform embeds **Dual-Layer Deepfake Protection**: an in-band i
 ## 🏗️ Architecture Overview
 
 ```text
-                                VoiceRep
+                                KolRep
                                    │
                    ┌───────────────┴───────────────┐
                    ▼                               ▼
@@ -72,9 +72,9 @@ Every generated waveform embeds **Dual-Layer Deepfake Protection**: an in-band i
 
 ---
 
-## 💡 Why VoiceRep? (Feature Comparison)
+## 💡 Why KolRep? (Feature Comparison)
 
-| Dimension | VoiceRep | VoiceStudio (`debpalash/VoiceStudio`) | ElevenLabs |
+| Dimension | KolRep | VoiceStudio (`debpalash/VoiceStudio`) | ElevenLabs |
 | :--- | :--- | :--- | :--- |
 | **Cost** | **$0.00 (Free & Open Source)** | $0.00 (Free & Open Source) | Paid ($$$ per character) |
 | **Privacy** | **100% Local / Air-Gapped** | 100% Local | Data sent to cloud |
@@ -98,8 +98,8 @@ Make sure you have Python 3.11+, Node.js 20+, and FFmpeg installed:
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/Yash-Raw/VoiceRep.git
-cd VoiceRep
+git clone https://github.com/Yash-Raw/KolRep.git
+cd KolRep
 
 # 2. Run the turnkey launcher
 chmod +x run-local.sh
@@ -163,7 +163,7 @@ Services started:
 |---|---|---|
 | `POST` | `/api/v1/verify` | Upload audio to analyze Layer 1 C2PA and Layer 2 acoustic watermark |
 | `GET` | `/api/v1/verify/certificate/{generation_id}` | Retrieve cryptographic provenance certificate for a generation |
-| `GET` | `/api/v1/verify/public-key` | Download VoiceRep platform X.509 signing certificate (PEM) |
+| `GET` | `/api/v1/verify/public-key` | Download KolRep platform X.509 signing certificate (PEM) |
 
 ---
 
@@ -198,5 +198,5 @@ Tests verify:
 
 ## 📄 License
 
-VoiceRep is licensed under the **[GNU Affero General Public License v3.0 (AGPL-3.0)](./LICENSE)**.
+KolRep is licensed under the **[GNU Affero General Public License v3.0 (AGPL-3.0)](./LICENSE)**.
 Under AGPL-3.0, any modified network or cloud deployment must make its full source code available to users.

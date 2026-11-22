@@ -18,7 +18,7 @@ from app.core.config import settings
 from app.providers.base import VoiceProvider
 from app.services.audio_service import FFMPEG_BIN
 
-logger = logging.getLogger("voicerep.self_hosted")
+logger = logging.getLogger("kolrep.self_hosted")
 
 # Ensure Conda env binary directory is on PATH for transformers and child processes
 CONDA_BIN = str(Path(FFMPEG_BIN).parent)
@@ -250,7 +250,7 @@ class SelfHostedProvider(VoiceProvider):
         # 2. Extract or use exact reference transcript
         # Priority: explicit transcript provided by user, otherwise auto-transcribe with Whisper
         ref_text = ""
-        if description and not description.startswith("Cloned for VoiceRep user") and len(description.strip()) > 3:
+        if description and not description.startswith("Cloned for KolRep user") and len(description.strip()) > 3:
             ref_text = description.strip()
 
         if not ref_text:
@@ -261,7 +261,7 @@ class SelfHostedProvider(VoiceProvider):
                 logger.info(f"ASR extracted exact transcript: '{ref_text}'")
 
         if not ref_text:
-            ref_text = "I hereby authorize VoiceRep to clone my voice for authorized speech synthesis."
+            ref_text = "I hereby authorize KolRep to clone my voice for authorized speech synthesis."
 
         # Save reference text
         with open(voice_dir / "reference.txt", "w", encoding="utf-8") as f:
@@ -321,7 +321,7 @@ class SelfHostedProvider(VoiceProvider):
                 ref_text = f.read().strip()
 
         if not ref_text:
-            ref_text = "I hereby authorize VoiceRep to clone my voice for authorized speech synthesis."
+            ref_text = "I hereby authorize KolRep to clone my voice for authorized speech synthesis."
 
         # 1. Normalize input text
         norm_text = normalize_speech_text(text)

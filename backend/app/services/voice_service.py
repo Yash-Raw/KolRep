@@ -15,7 +15,7 @@ from app.schemas.voice import VoiceCreate, VoiceUpdate
 from app.services.audio_service import audio_service
 from app.services.storage_service import storage_service
 
-logger = logging.getLogger("voicerep.voice_service")
+logger = logging.getLogger("kolrep.voice_service")
 
 
 class VoiceService:
@@ -104,7 +104,7 @@ class VoiceService:
                 clone_res = await active_provider.create_voice(
                     name=voice.name,
                     audio_file_path=temp_wav,
-                    description=voice_data.transcript or voice_data.description or f"Cloned for VoiceRep user {owner_id}",
+                    description=voice_data.transcript or voice_data.description or f"Cloned for KolRep user {owner_id}",
                     remove_background_noise=False,
                 )
                 voice.provider_voice_id = clone_res.get("voice_id")

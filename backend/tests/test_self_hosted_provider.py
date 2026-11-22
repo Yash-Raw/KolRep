@@ -96,7 +96,7 @@ async def test_self_hosted_synthesis_pipeline(temp_voice_dir, fake_wav_file):
 
         audio_bytes = await provider.synthesize(
             voice_id=voice_id,
-            text="Welcome to VoiceRep self-hosted narration engine.",
+            text="Welcome to KolRep self-hosted narration engine.",
             settings={"speed": 1.0},
         )
 
@@ -170,7 +170,7 @@ async def test_long_text_phonetic_chunking_and_stitching(temp_voice_dir, fake_wa
     from app.providers.self_hosted import chunk_text_by_sentence
 
     long_paragraph = (
-        "VoiceRep features a local zero-cost voice cloning engine built on Diffusion Transformers. "
+        "KolRep features a local zero-cost voice cloning engine built on Diffusion Transformers. "
         "By utilizing Conditional Flow Matching, speech synthesis achieves exceptional acoustic fidelity. "
         "Long passages are split at natural punctuation boundaries, preventing ODE solver degradation and truncation."
     )
@@ -232,14 +232,14 @@ def test_storage_path_traversal_security_guard():
     try:
         upload_res = client.post(
             f"/api/v1/storage/upload/{valid_key}",
-            files={"file": ("test.txt", b"Valid VoiceRep content", "text/plain")},
+            files={"file": ("test.txt", b"Valid KolRep content", "text/plain")},
         )
         assert upload_res.status_code == 200
 
         download_res = client.get(f"/api/v1/storage/download/{valid_key}")
         assert download_res.status_code == 200
         assert download_res.headers.get("accept-ranges") == "bytes"
-        assert download_res.content == b"Valid VoiceRep content"
+        assert download_res.content == b"Valid KolRep content"
     finally:
         # Clean up temporary test file from storage
         from app.core.config import settings

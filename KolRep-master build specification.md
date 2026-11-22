@@ -1,9 +1,9 @@
-# VoiceRep — AI Voice Replication Platform
+# KolRep — AI Voice Replication Platform
 ## Master Product & Engineering Implementation Specification
 
 You are Gemini 3.8 Flash acting as a senior full-stack software engineer, software architect, Python backend engineer, frontend developer, and integration engineer.
 
-Your task is to build a complete, functional, production-minded MVP of **VoiceRep**, an AI voice replication platform.
+Your task is to build a complete, functional, production-minded MVP of **KolRep**, an AI voice replication platform.
 
 Do not merely generate a project plan, mockup, boilerplate, or code snippets. Inspect the existing repository, make implementation decisions, write working code, run tests, fix errors, and deliver a functional application.
 
@@ -11,7 +11,7 @@ Do not merely generate a project plan, mockup, boilerplate, or code snippets. In
 
 # 1. Product vision
 
-VoiceRep allows users to upload an authorized voice recording, create a reusable AI voice clone, and use that voice for two purposes:
+KolRep allows users to upload an authorized voice recording, create a reusable AI voice clone, and use that voice for two purposes:
 
 ### Module A: Voice Studio
 
@@ -124,7 +124,7 @@ Do not create microservices.
 The application should contain these logical components:
 
 ```text
-                   VoiceRep
+                   KolRep
                         |
                  Next.js Frontend
                         |
@@ -518,7 +518,7 @@ Verify that custom voice IDs can actually be passed through the conversation ini
 
 Do not assume that an override works simply because it appears in an example.
 
-## 7.3 Creating agents in VoiceRep
+## 7.3 Creating agents in KolRep
 
 Build a Create Agent form.
 
@@ -1428,6 +1428,6 @@ Do not ask for approval between ordinary implementation phases. Make sensible en
 
 When a genuine external dependency blocks implementation, continue with all independent work and clearly document the blocker.
 
-Your ultimate goal is a working VoiceRep application in which the same uploaded and authorized voice can power both long-form speech generation and conversational AI agents.
+Your ultimate goal is a working KolRep application in which the same uploaded and authorized voice can power both long-form speech generation and conversational AI agents.
 
 **Build the product, not just the demonstration.**

@@ -11,7 +11,7 @@ import { VoiceSettingsForm } from "@/components/studio/VoiceSettingsForm";
 import { copyToClipboard, downloadAudioFile, formatAudioFilename } from "@/lib/download";
 
 const DEFAULT_SAMPLE_TEXT =
-  "Welcome to VoiceRep. By replicating verified voices with high precision, you can generate natural sounding studio narration for podcasts, audiobooks, and video voiceovers in seconds.";
+  "Welcome to KolRep. By replicating verified voices with high precision, you can generate natural sounding studio narration for podcasts, audiobooks, and video voiceovers in seconds.";
 
 export default function StudioPage() {
   const searchParams = useSearchParams();

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     BACKEND_URL: str = "http://localhost:8000"
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/voicerep"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/kolrep"
     SYNC_DATABASE_URL: Optional[str] = None
 
     # Voice Provider Configuration (100% self-hosted local engine)
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     R2_ACCOUNT_ID: Optional[str] = None
     R2_ACCESS_KEY_ID: Optional[str] = None
     R2_SECRET_ACCESS_KEY: Optional[str] = None
-    R2_BUCKET_NAME: str = "voicerep-audio"
+    R2_BUCKET_NAME: str = "kolrep-audio"
     R2_ENDPOINT_URL: Optional[str] = None
     LOCAL_STORAGE_PATH: str = "./storage"
 

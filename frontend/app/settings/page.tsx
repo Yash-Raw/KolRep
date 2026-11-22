@@ -73,7 +73,7 @@ export default function SettingsPage() {
           </div>
 
           <p className="text-xs text-muted  leading-relaxed">
-            VoiceRep is running in pure single-user local workstation mode. Audio generation, feature extraction, neural inference, and C2PA signing are executed entirely on your machine.
+            KolRep is running in pure single-user local workstation mode. Audio generation, feature extraction, neural inference, and C2PA signing are executed entirely on your machine.
           </p>
 
           <div className="grid grid-cols-1 gap-3 text-xs pt-1">
@@ -96,13 +96,13 @@ export default function SettingsPage() {
           </div>
 
           <p className="text-xs text-muted  leading-relaxed">
-            Every audio file synthesized by VoiceRep embeds dual-layer provenance protection: an inaudible acoustic watermark (QIM) and an ECDSA P-256 signed C2PA manifest compliant with EU AI Act Article 50.
+            Every audio file synthesized by KolRep embeds dual-layer provenance protection: an inaudible acoustic watermark (QIM) and an ECDSA P-256 signed C2PA manifest compliant with EU AI Act Article 50.
           </p>
 
           <div className="p-4 rounded-lg bg-canvas  border border-line  text-xs text-muted  space-y-1">
             <p className="font-semibold text-ink ">Revocation & Deletion Guarantee:</p>
             <p>
-              When you delete a voice in the Voice Library, VoiceRep immediately deletes the model checkpoints, acoustic embeddings, and audio samples directly from your disk.
+              When you delete a voice in the Voice Library, KolRep immediately deletes the model checkpoints, acoustic embeddings, and audio samples directly from your disk.
             </p>
           </div>
         </div>

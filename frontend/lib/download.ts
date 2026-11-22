@@ -15,7 +15,7 @@ export function formatAudioFilename(options: {
   text?: string;
   id?: string;
 }): string {
-  const parts: string[] = ["voicerep"];
+  const parts: string[] = ["kolrep"];
 
   if (options.voiceName) {
     const cleanVoice = sanitizeFilename(options.voiceName);

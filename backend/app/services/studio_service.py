@@ -15,7 +15,7 @@ from app.services.c2pa_service import c2pa_service
 from app.services.storage_service import storage_service
 from app.services.watermark_service import watermark_service
 
-logger = logging.getLogger("voicerep.studio_service")
+logger = logging.getLogger("kolrep.studio_service")
 
 
 class StudioService:

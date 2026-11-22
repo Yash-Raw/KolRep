@@ -3,13 +3,14 @@ import logging
 import os
 import re
 import shutil
+import sys
 import subprocess
 import tempfile
 from typing import Optional
 from app.core.config import settings
 from app.schemas.audio import AudioQualityReport
 
-logger = logging.getLogger("voicerep.audio")
+logger = logging.getLogger("kolrep.audio")
 
 
 def get_binary_path(name: str) -> str:
@@ -17,10 +18,18 @@ def get_binary_path(name: str) -> str:
     path = shutil.which(name)
     if path:
         return path
-    # Check conda environment
-    conda_bin = f"/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/{name}"
-    if os.path.exists(conda_bin):
-        return conda_bin
+    # Check current Python interpreter bin directory and active/standard conda environment
+    py_bin = os.path.join(os.path.dirname(sys.executable), name)
+    if os.path.exists(py_bin):
+        return py_bin
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    if conda_prefix:
+        conda_bin = os.path.join(conda_prefix, "bin", name)
+        if os.path.exists(conda_bin):
+            return conda_bin
+    std_conda = os.path.expanduser(f"~/miniforge3/envs/kolrep/bin/{name}")
+    if os.path.exists(std_conda):
+        return std_conda
     # Check homebrew
     brew_bin = f"/opt/homebrew/bin/{name}"
     if os.path.exists(brew_bin):

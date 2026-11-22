@@ -6,7 +6,7 @@ import boto3
 from botocore.config import Config
 from app.core.config import settings
 
-logger = logging.getLogger("voicerep.storage")
+logger = logging.getLogger("kolrep.storage")
 
 
 class StorageService:

@@ -15,7 +15,7 @@ from app.schemas.verification import VerificationReport
 from app.services.c2pa_service import c2pa_service
 from app.services.watermark_service import watermark_service
 
-logger = logging.getLogger("voicerep.api.verification")
+logger = logging.getLogger("kolrep.api.verification")
 
 router = APIRouter(prefix="/verify", tags=["Deepfake & Provenance Verification"])
 
@@ -82,7 +82,7 @@ async def verify_audio(
     created_at_iso = None
     generation_id = None
     user_hash = None
-    license_text = "VoiceRep AI Synthetic Media Permissive License v1.0"
+    license_text = "KolRep AI Synthetic Media Permissive License v1.0"
     compliance = [
         "EU AI Act Article 50 (Transparency and Watermarking of AI Generated Content)",
         "US Executive Order 14110 (Standards for AI-Generated Digital Content Provenance)",
@@ -170,7 +170,7 @@ async def get_generation_certificate(
         "watermark_payload": generation.watermark_payload,
         "c2pa_manifest": generation.c2pa_manifest,
         "certificate_pem": cert_pem,
-        "signer": "VoiceRep Generation Signer CA (X.509 ECDSA P-256)",
+        "signer": "KolRep Generation Signer CA (X.509 ECDSA P-256)",
         "compliance": [
             "EU AI Act Article 50",
             "US Executive Order 14110",
@@ -180,5 +180,5 @@ async def get_generation_certificate(
 
 @router.get("/public-key", response_class=PlainTextResponse)
 async def get_public_certificate():
-    """Returns VoiceRep's X.509 public signing certificate in PEM format for independent verification."""
+    """Returns KolRep's X.509 public signing certificate in PEM format for independent verification."""
     return c2pa_service.get_public_certificate_pem()

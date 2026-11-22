@@ -3,25 +3,25 @@ version: '3.8'
 services:
   db:
     image: postgres:16-alpine
-    container_name: voicerep_postgres
+    container_name: kolrep_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: voicerep
+      POSTGRES_DB: kolrep
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d voicerep"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kolrep"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: voicerep_redis
+    container_name: kolrep_redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -37,14 +37,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: voicerep_backend
+    container_name: kolrep_backend
     restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
       - APP_ENV=development
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@db:5432/voicerep
-      - SYNC_DATABASE_URL=postgresql+psycopg2://postgres:postgrespassword@db:5432/voicerep
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgrespassword@db:5432/kolrep
+      - SYNC_DATABASE_URL=postgresql+psycopg2://postgres:postgrespassword@db:5432/kolrep
       - REDIS_URL=redis://redis:6379/0
       - FRONTEND_URL=http://localhost:3000
     depends_on:
@@ -60,7 +60,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: voicerep_frontend
+    container_name: kolrep_frontend
     restart: unless-stopped
     ports:
       - "3000:3000"

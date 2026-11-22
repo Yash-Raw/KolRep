@@ -33,7 +33,7 @@ async def test_generation_flow(client, ready_voice):
 
         payload = {
             "voice_id": str(ready_voice.id),
-            "input_text": "Hello, welcome to VoiceRep narration studio.",
+            "input_text": "Hello, welcome to KolRep narration studio.",
             "model_id": "F5TTS_v1_Base",
             "voice_settings": {
                 "stability": 0.5,

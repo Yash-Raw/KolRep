@@ -12,7 +12,7 @@ from app.schemas.generation import (
 from app.services.studio_service import studio_service
 from app.services.storage_service import storage_service
 
-logger = logging.getLogger("voicerep.api.generations")
+logger = logging.getLogger("kolrep.api.generations")
 router = APIRouter(tags=["Voice Studio"])
 
 

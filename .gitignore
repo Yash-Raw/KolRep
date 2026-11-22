@@ -40,6 +40,6 @@ backend/storage/
 .env.*.local
 frontend/.env.local
 backend/.env
-VoiceRep-master build specification.md
+KolRep-master build specification.md
 docs/
 design/screenshots

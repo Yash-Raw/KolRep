@@ -10,11 +10,11 @@ from app.core.config import settings
 from app.database.session import get_db
 from app.models.user import User
 
-logger = logging.getLogger("voicerep.security")
+logger = logging.getLogger("kolrep.security")
 security_scheme = HTTPBearer(auto_error=False)
 
 DEFAULT_LOCAL_USER_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
-DEFAULT_LOCAL_USER_EMAIL = "local@voicerep.local"
+DEFAULT_LOCAL_USER_EMAIL = "local@kolrep.local"
 
 
 class AuthenticatedUser:
@@ -43,7 +43,7 @@ async def get_current_user(
             sub = payload.get("sub")
             if sub:
                 user_uuid = uuid.UUID(sub)
-                user_email = payload.get("email") or f"{str(user_uuid)[:8]}@voicerep.local"
+                user_email = payload.get("email") or f"{str(user_uuid)[:8]}@kolrep.local"
         except Exception as e:
             logger.debug(f"Could not parse custom token, defaulting to local owner: {e}")
 
