@@ -7,7 +7,7 @@ import time
 from typing import Any, Optional
 from app.core.config import settings
 
-logger = logging.getLogger("voicerep.desktop.model_manager")
+logger = logging.getLogger("kolrep.desktop.model_manager")
 
 REQUIRED_MODELS = [
     {
@@ -52,7 +52,7 @@ MIN_REQUIRED_FREE_SPACE_BYTES = 2_500_000_000  # 2.5 GB
 class ModelManager:
     """
     Manages local neural model downloads, caching, integrity, and disk space checks
-    for the VoiceRep macOS desktop application.
+    for the KolRep macOS desktop application.
     """
 
     def __init__(self, models_dir: Optional[str] = None) -> None:
@@ -61,7 +61,7 @@ class ModelManager:
         elif settings.DESKTOP_DATA_DIR:
             self.models_dir = Path(settings.DESKTOP_DATA_DIR) / "models"
         else:
-            self.models_dir = Path.home() / "Library" / "Application Support" / "VoiceRep" / "models"
+            self.models_dir = Path.home() / "Library" / "Application Support" / "KolRep" / "models"
 
         self._lock = asyncio.Lock()
         self._is_downloading = False

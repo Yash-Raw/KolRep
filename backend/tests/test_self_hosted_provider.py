@@ -97,7 +97,7 @@ async def test_self_hosted_synthesis_pipeline(temp_voice_dir, fake_wav_file):
 
         audio_bytes = await provider.synthesize(
             voice_id=voice_id,
-            text="Welcome to VoiceRep self-hosted narration engine.",
+            text="Welcome to KolRep self-hosted narration engine.",
             settings={"speed": 1.0},
         )
 
@@ -171,7 +171,7 @@ async def test_long_text_phonetic_chunking_and_stitching(temp_voice_dir, fake_wa
     from app.providers.self_hosted import chunk_text_by_sentence
 
     long_paragraph = (
-        "VoiceRep features a local zero-cost voice cloning engine built on Diffusion Transformers. "
+        "KolRep features a local zero-cost voice cloning engine built on Diffusion Transformers. "
         "By utilizing Conditional Flow Matching, speech synthesis achieves exceptional acoustic fidelity. "
         "Long passages are split at natural punctuation boundaries, preventing ODE solver degradation and truncation."
     )
@@ -207,6 +207,11 @@ async def test_long_text_phonetic_chunking_and_stitching(temp_voice_dir, fake_wa
 
 def test_storage_path_traversal_security_guard():
     """Verify that path traversal attempts are blocked with HTTP 403 Forbidden."""
+    from app.api.v1.storage import get_safe_storage_path
+    from app.core.config import settings
+    from app.services.storage_service import storage_service
+    from fastapi import HTTPException
+
     client = TestClient(app)
 
     # 1. Path traversal download attempt (URL encoded to reach the server unnormalized)
@@ -214,37 +219,23 @@ def test_storage_path_traversal_security_guard():
     assert res.status_code == 403
     assert "Directory traversal" in res.json()["detail"]
 
-    # 2. Path traversal upload attempt
-    res2 = client.post(
-        "/api/v1/storage/upload/%2e%2e/%2e%2e/evil.txt",
-        files={"file": ("evil.txt", b"malicious content", "text/plain")},
-    )
-    assert res2.status_code == 403
-    assert "Directory traversal" in res2.json()["detail"]
-
-    # 3. Direct unit test of get_safe_storage_path
-    from app.api.v1.storage import get_safe_storage_path
-    from fastapi import HTTPException
+    # 2. Direct unit test of get_safe_storage_path
     with pytest.raises(HTTPException) as exc_info:
         get_safe_storage_path("./storage", "../../app/core/config.py")
     assert exc_info.value.status_code == 403
 
-    # 4. Valid upload and download with HTTP 206 Byte Range support
+    # 3. Valid local storage write and download with HTTP 206 Byte Range support
     valid_key = f"generations/test_{uuid.uuid4().hex}.txt"
     try:
-        upload_res = client.post(
-            f"/api/v1/storage/upload/{valid_key}",
-            files={"file": ("test.txt", b"Valid VoiceRep content", "text/plain")},
-        )
-        assert upload_res.status_code == 200
+        storage_service.upload_bytes(b"Valid KolRep content", valid_key)
 
         download_res = client.get(f"/api/v1/storage/download/{valid_key}")
         assert download_res.status_code == 200
         assert download_res.headers.get("accept-ranges") == "bytes"
-        assert download_res.content == b"Valid VoiceRep content"
+        assert download_res.content == b"Valid KolRep content"
     finally:
         # Clean up temporary test file from storage
-        from app.core.config import settings
+        storage_service.delete_object(valid_key)
         test_file_path = os.path.abspath(os.path.join(settings.LOCAL_STORAGE_PATH, valid_key))
         if os.path.exists(test_file_path):
             os.remove(test_file_path)

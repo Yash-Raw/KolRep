@@ -1,6 +1,6 @@
-# VoiceRep — Analog Broadcast
+# KolRep — Analog Broadcast
 
-The redesign replaces the previous green refresh with an identity drawn from broadcast equipment, independent record sleeves, and editorial typography. It is implemented on `design/voicerep-ui-refresh`.
+The redesign replaces the previous green refresh with an identity drawn from broadcast equipment, independent record sleeves, and editorial typography. It is implemented on `design/kolrep-ui-refresh`.
 
 ## Visual decisions
 

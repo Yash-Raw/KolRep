@@ -34,10 +34,10 @@ TestingSessionLocal = async_sessionmaker(
 )
 
 TEST_USER_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
-TEST_USER_EMAIL = "testuser@voicerep.local"
+TEST_USER_EMAIL = "testuser@kolrep.local"
 
 TEST_USER_2_ID = uuid.UUID("22222222-2222-2222-2222-222222222222")
-TEST_USER_2_EMAIL = "otheruser@voicerep.local"
+TEST_USER_2_EMAIL = "otheruser@kolrep.local"
 
 
 @pytest_asyncio.fixture

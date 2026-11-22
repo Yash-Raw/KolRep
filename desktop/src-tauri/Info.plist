@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>NSMicrophoneUsageDescription</key>
-    <string>VoiceRep requires microphone access to record voice samples for zero-shot voice cloning.</string>
+    <string>KolRep requires microphone access to record voice samples for zero-shot voice cloning.</string>
     <key>NSRequiresAquaSystemAppearance</key>
     <false/>
     <key>NSHighResolutionCapable</key>

@@ -30,11 +30,11 @@ fn locate_backend_executable(resource_dir: Option<PathBuf>) -> (String, Vec<Stri
     // 1. Check packaged binary in app bundle resources
     if let Some(ref res) = resource_dir {
         let candidates = [
-            res.join("resources").join("engine").join("voicerep-engine").join("voicerep-engine"),
-            res.join("engine").join("voicerep-engine").join("voicerep-engine"),
-            res.join("resources").join("engine").join("voicerep-engine"),
-            res.join("engine").join("voicerep-engine"),
-            res.join("bin").join("voicerep-engine"),
+            res.join("resources").join("engine").join("kolrep-engine").join("kolrep-engine"),
+            res.join("engine").join("kolrep-engine").join("kolrep-engine"),
+            res.join("resources").join("engine").join("kolrep-engine"),
+            res.join("engine").join("kolrep-engine"),
+            res.join("bin").join("kolrep-engine"),
         ];
         for candidate in candidates {
             if candidate.exists() {
@@ -46,7 +46,7 @@ fn locate_backend_executable(resource_dir: Option<PathBuf>) -> (String, Vec<Stri
     // 2. Check current directory / app bundle MacOS dir
     if let Ok(current_exe) = std::env::current_exe() {
         if let Some(parent) = current_exe.parent() {
-            let candidate_macos = parent.join("voicerep-engine");
+            let candidate_macos = parent.join("kolrep-engine");
             if candidate_macos.exists() {
                 return (candidate_macos.to_string_lossy().to_string(), vec![]);
             }
@@ -55,9 +55,9 @@ fn locate_backend_executable(resource_dir: Option<PathBuf>) -> (String, Vec<Stri
 
     // 3. Check repo desktop/dist directory (local test/dev mode)
     let repo_dist_candidates = [
-        PathBuf::from("../../desktop/dist/voicerep-engine/voicerep-engine"),
-        PathBuf::from("desktop/dist/voicerep-engine/voicerep-engine"),
-        PathBuf::from("../desktop/dist/voicerep-engine/voicerep-engine"),
+        PathBuf::from("../../desktop/dist/kolrep-engine/kolrep-engine"),
+        PathBuf::from("desktop/dist/kolrep-engine/kolrep-engine"),
+        PathBuf::from("../desktop/dist/kolrep-engine/kolrep-engine"),
     ];
     for dist in repo_dist_candidates {
         if dist.exists() {
@@ -65,18 +65,29 @@ fn locate_backend_executable(resource_dir: Option<PathBuf>) -> (String, Vec<Stri
         }
     }
 
-    // 3. Development / unpackaged fallback: Run Python entrypoint directly
-    let python_candidates = [
-        "/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/python",
-        "/opt/homebrew/bin/python3",
-        "python3",
-        "python",
-    ];
+    // 4. Development / unpackaged fallback: Run Python entrypoint directly
+    let mut python_candidates: Vec<String> = Vec::new();
+    if let Ok(explicit_py) = std::env::var("KOLREP_PYTHON") {
+        python_candidates.push(explicit_py);
+    }
+    if let Ok(conda_prefix) = std::env::var("CONDA_PREFIX") {
+        python_candidates.push(format!("{}/bin/python", conda_prefix));
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        python_candidates.push(format!("{}/miniforge3/envs/kolrep/bin/python", home));
+        python_candidates.push(format!("{}/miniconda3/envs/kolrep/bin/python", home));
+    }
+    python_candidates.extend([
+        "/opt/homebrew/Caskroom/miniforge/base/envs/kolrep/bin/python".to_string(),
+        "/opt/homebrew/bin/python3".to_string(),
+        "python3".to_string(),
+        "python".to_string(),
+    ]);
 
     let mut selected_python = "python3".to_string();
-    for py in python_candidates {
+    for py in &python_candidates {
         if Path::new(py).exists() {
-            selected_python = py.to_string();
+            selected_python = py.clone();
             break;
         }
     }
@@ -108,12 +119,12 @@ fn spawn_backend(
 
     // If backend is already running (e.g. dev server), skip spawning
     if is_backend_healthy(addr) {
-        log::info!("VoiceRep backend already running on port 8000.");
+        log::info!("KolRep backend already running on port 8000.");
         return;
     }
 
     let (exec_path, extra_args) = locate_backend_executable(resource_dir.clone());
-    log::info!("Spawning VoiceRep backend: {} {:?}", exec_path, extra_args);
+    log::info!("Spawning KolRep backend: {} {:?}", exec_path, extra_args);
 
     let mut cmd = Command::new(&exec_path);
     for arg in extra_args {
@@ -123,28 +134,39 @@ fn spawn_backend(
     cmd.arg("--host").arg("127.0.0.1");
 
     // In desktop mode, set environment variables
-    cmd.env("VOICEREP_DESKTOP_MODE", "1");
+    cmd.env("KOLREP_DESKTOP_MODE", "1");
     cmd.env("ENABLE_REDIS", "false");
 
     // Ensure working directory is within user Application Support and never root /
     if let Ok(home) = std::env::var("HOME") {
-        let app_dir = PathBuf::from(home).join("Library/Application Support/VoiceRep");
+        let app_dir = PathBuf::from(home).join("Library/Application Support/KolRep");
         let _ = std::fs::create_dir_all(&app_dir);
         cmd.current_dir(&app_dir);
     }
 
+    let conda_prefix = std::env::var("CONDA_PREFIX").ok();
+    let home_dir = std::env::var("HOME").ok();
+
     let mut extra_path_dirs: Vec<PathBuf> = Vec::new();
-    let ffmpeg_candidates = [
+    let mut ffmpeg_candidates = vec![
         resource_dir.as_ref().map(|r| r.join("resources").join("bin").join("ffmpeg")),
         resource_dir.as_ref().map(|r| r.join("bin").join("ffmpeg")),
         Some(PathBuf::from("../../desktop/src-tauri/resources/bin/ffmpeg")),
         Some(PathBuf::from("desktop/src-tauri/resources/bin/ffmpeg")),
-        Some(PathBuf::from("/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/ffmpeg")),
-        Some(PathBuf::from("/opt/homebrew/bin/ffmpeg")),
     ];
+    if let Some(ref cp) = conda_prefix {
+        ffmpeg_candidates.push(Some(PathBuf::from(cp).join("bin").join("ffmpeg")));
+    }
+    if let Some(ref hd) = home_dir {
+        ffmpeg_candidates.push(Some(PathBuf::from(hd).join("miniforge3/envs/kolrep/bin/ffmpeg")));
+        ffmpeg_candidates.push(Some(PathBuf::from(hd).join("miniconda3/envs/kolrep/bin/ffmpeg")));
+    }
+    ffmpeg_candidates.push(Some(PathBuf::from("/opt/homebrew/Caskroom/miniforge/base/envs/kolrep/bin/ffmpeg")));
+    ffmpeg_candidates.push(Some(PathBuf::from("/opt/homebrew/bin/ffmpeg")));
+
     for fc in ffmpeg_candidates.into_iter().flatten() {
         if fc.exists() {
-            cmd.env("VOICEREP_FFMPEG_PATH", &fc);
+            cmd.env("KOLREP_FFMPEG_PATH", &fc);
             if let Some(parent) = fc.parent() {
                 extra_path_dirs.push(parent.to_path_buf());
             }
@@ -152,17 +174,25 @@ fn spawn_backend(
         }
     }
 
-    let ffprobe_candidates = [
+    let mut ffprobe_candidates = vec![
         resource_dir.as_ref().map(|r| r.join("resources").join("bin").join("ffprobe")),
         resource_dir.as_ref().map(|r| r.join("bin").join("ffprobe")),
         Some(PathBuf::from("../../desktop/src-tauri/resources/bin/ffprobe")),
         Some(PathBuf::from("desktop/src-tauri/resources/bin/ffprobe")),
-        Some(PathBuf::from("/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/ffprobe")),
-        Some(PathBuf::from("/opt/homebrew/bin/ffprobe")),
     ];
+    if let Some(ref cp) = conda_prefix {
+        ffprobe_candidates.push(Some(PathBuf::from(cp).join("bin").join("ffprobe")));
+    }
+    if let Some(ref hd) = home_dir {
+        ffprobe_candidates.push(Some(PathBuf::from(hd).join("miniforge3/envs/kolrep/bin/ffprobe")));
+        ffprobe_candidates.push(Some(PathBuf::from(hd).join("miniconda3/envs/kolrep/bin/ffprobe")));
+    }
+    ffprobe_candidates.push(Some(PathBuf::from("/opt/homebrew/Caskroom/miniforge/base/envs/kolrep/bin/ffprobe")));
+    ffprobe_candidates.push(Some(PathBuf::from("/opt/homebrew/bin/ffprobe")));
+
     for fc in ffprobe_candidates.into_iter().flatten() {
         if fc.exists() {
-            cmd.env("VOICEREP_FFPROBE_PATH", &fc);
+            cmd.env("KOLREP_FFPROBE_PATH", &fc);
             if let Some(parent) = fc.parent() {
                 if !extra_path_dirs.contains(&parent.to_path_buf()) {
                     extra_path_dirs.push(parent.to_path_buf());
@@ -172,19 +202,21 @@ fn spawn_backend(
         }
     }
 
-    // Ensure child backend process has comprehensive PATH (FFmpeg, Homebrew, Conda)
+    // Ensure child backend process has comprehensive PATH (bundled bins, Homebrew, active Conda)
     let current_path = std::env::var("PATH").unwrap_or_else(|_| "/usr/bin:/bin:/usr/sbin:/sbin".to_string());
     let mut path_elements: Vec<String> = extra_path_dirs.iter().map(|p| p.to_string_lossy().to_string()).collect();
     path_elements.push("/opt/homebrew/bin".to_string());
     path_elements.push("/opt/homebrew/sbin".to_string());
     path_elements.push("/usr/local/bin".to_string());
-    path_elements.push("/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin".to_string());
+    if let Some(ref cp) = conda_prefix {
+        path_elements.push(format!("{}/bin", cp));
+    }
     path_elements.push(current_path);
     cmd.env("PATH", path_elements.join(":"));
 
     match cmd.spawn() {
         Ok(child) => {
-            log::info!("VoiceRep backend process spawned successfully (PID: {})", child.id());
+            log::info!("KolRep backend process spawned successfully (PID: {})", child.id());
             if let Ok(mut state) = backend_state.lock() {
                 *state = Some(child);
             }
@@ -194,15 +226,15 @@ fn spawn_backend(
                 for i in 1..=60 {
                     thread::sleep(Duration::from_millis(500));
                     if is_backend_healthy(addr) {
-                        log::info!("VoiceRep backend health check passed at attempt {}.", i);
+                        log::info!("KolRep backend health check passed at attempt {}.", i);
                         return;
                     }
                 }
-                log::warn!("VoiceRep backend did not respond to health checks within 30 seconds.");
+                log::warn!("KolRep backend did not respond to health checks within 30 seconds.");
             });
         }
         Err(e) => {
-            log::error!("Failed to spawn VoiceRep backend process: {}", e);
+            log::error!("Failed to spawn KolRep backend process: {}", e);
         }
     }
 }
@@ -210,10 +242,10 @@ fn spawn_backend(
 fn kill_backend(backend_state: &Arc<Mutex<Option<Child>>>) {
     if let Ok(mut state) = backend_state.lock() {
         if let Some(mut child) = state.take() {
-            log::info!("Terminating VoiceRep backend process (PID: {})...", child.id());
+            log::info!("Terminating KolRep backend process (PID: {})...", child.id());
             let _ = child.kill();
             let _ = child.wait();
-            log::info!("VoiceRep backend process terminated.");
+            log::info!("KolRep backend process terminated.");
         }
     }
 }
@@ -244,7 +276,7 @@ pub fn run() {
             }
         })
         .build(tauri::generate_context!())
-        .expect("error while building VoiceRep tauri application");
+        .expect("error while building KolRep tauri application");
 
     app.run(move |_app_handle, event| {
         if let RunEvent::Exit | RunEvent::ExitRequested { .. } = event {

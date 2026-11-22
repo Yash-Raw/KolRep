@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.database.session import get_db
 
-logger = logging.getLogger("voicerep.health")
+logger = logging.getLogger("kolrep.health")
 router = APIRouter(tags=["Health"])
 
 
@@ -41,6 +41,6 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         "database": db_status,
         "redis": redis_status,
         "environment": settings.APP_ENV,
-        "desktop_mode": settings.VOICEREP_DESKTOP_MODE,
+        "desktop_mode": settings.KOLREP_DESKTOP_MODE,
         "version": "1.0.0",
     }

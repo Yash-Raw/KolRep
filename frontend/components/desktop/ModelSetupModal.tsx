@@ -113,7 +113,7 @@ export function ModelSetupModal() {
         {/* Content */}
         <div className="p-6 space-y-5">
           <p className="text-sm text-ink leading-relaxed">
-            VoiceRep generates speech and aligns voices using modern <strong>F5-TTS Diffusion Transformers</strong> and <strong>Whisper</strong>. To ensure complete privacy with zero cloud dependencies, the neural model weights are stored locally on your Mac.
+            KolRep generates speech and aligns voices using modern <strong>F5-TTS Diffusion Transformers</strong> and <strong>Whisper</strong>. To ensure complete privacy with zero cloud dependencies, the neural model weights are stored locally on your Mac.
           </p>
 
           {/* Hardware & Storage Badge */}

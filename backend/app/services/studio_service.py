@@ -16,7 +16,7 @@ from app.services.c2pa_service import c2pa_service
 from app.services.storage_service import storage_service
 from app.services.watermark_service import watermark_service
 
-logger = logging.getLogger("voicerep.studio_service")
+logger = logging.getLogger("kolrep.studio_service")
 
 
 class StudioService:
@@ -236,7 +236,7 @@ class StudioService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Audio file is not available for this generation.",
             )
-        return storage_service.get_presigned_download_url(gen.audio_storage_key)
+        return storage_service.get_download_url(gen.audio_storage_key)
 
     async def delete_generation(
         self,

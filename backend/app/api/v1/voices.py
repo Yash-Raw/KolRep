@@ -7,24 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import AuthenticatedUser, get_current_user
 from app.database.session import get_db
 from app.schemas.voice import VoiceCreate, VoiceListResponse, VoiceResponse, VoiceUpdate
-from app.services.storage_service import storage_service
 from app.services.voice_service import voice_service
 
-logger = logging.getLogger("voicerep.api.voices")
+logger = logging.getLogger("kolrep.api.voices")
 router = APIRouter(tags=["Voices"])
-
-
-@router.post("/uploads/presign")
-async def get_presigned_upload(
-    filename: str = Query(..., description="Original filename"),
-    content_type: str = Query("audio/mpeg", description="MIME type"),
-    current_user: AuthenticatedUser = Depends(get_current_user),
-):
-    """Generate a presigned upload URL for direct storage uploads."""
-    ext = filename.split(".")[-1] if "." in filename else "mp3"
-    object_key = f"uploads/{current_user.id}/{uuid.uuid4()}.{ext}"
-    presigned = storage_service.get_presigned_upload_url(object_key, content_type)
-    return presigned
 
 
 @router.post("/voices", response_model=VoiceResponse, status_code=status.HTTP_201_CREATED)

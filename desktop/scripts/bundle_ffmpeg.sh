@@ -2,7 +2,7 @@
 set -e
 
 # ==============================================================================
-# VoiceRep: Standalone Apple Silicon FFmpeg Bundler
+# KolRep: Standalone Apple Silicon FFmpeg Bundler
 # Recursively packages ffmpeg, ffprobe, and all Mach-O dylib dependencies
 # into desktop/src-tauri/resources/ for self-contained desktop execution.
 # ==============================================================================
@@ -15,15 +15,23 @@ TARGET_LIB="$TARGET_DIR/lib"
 
 mkdir -p "$TARGET_BIN" "$TARGET_LIB"
 
-echo "=== Bundling Apple Silicon FFmpeg for VoiceRep Desktop ==="
+echo "=== Bundling Apple Silicon FFmpeg for KolRep Desktop ==="
 
-# Find source FFmpeg
-SRC_FFMPEG="/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/ffmpeg"
-SRC_FFPROBE="/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/ffprobe"
-SRC_LIB="/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/lib"
+# Find source FFmpeg (prefer active conda env, standard kolrep conda env, then PATH)
+CONDA_BIN=""
+for cand in "${CONDA_PREFIX:+$CONDA_PREFIX/bin}" "$HOME/miniforge3/envs/kolrep/bin" "$HOME/miniconda3/envs/kolrep/bin" "/opt/homebrew/Caskroom/miniforge/base/envs/kolrep/bin"; do
+    if [ -n "$cand" ] && [ -x "$cand/ffmpeg" ] && [ -x "$cand/ffprobe" ]; then
+        CONDA_BIN="$cand"
+        break
+    fi
+done
 
-if [ ! -f "$SRC_FFMPEG" ]; then
-    echo "Locating ffmpeg from which..."
+if [ -n "$CONDA_BIN" ]; then
+    SRC_FFMPEG="$CONDA_BIN/ffmpeg"
+    SRC_FFPROBE="$CONDA_BIN/ffprobe"
+    SRC_LIB="$(dirname "$CONDA_BIN")/lib"
+else
+    echo "Locating ffmpeg from PATH..."
     SRC_FFMPEG="$(which ffmpeg)"
     SRC_FFPROBE="$(which ffprobe)"
     SRC_LIB="$(dirname "$(dirname "$SRC_FFMPEG")")/lib"

@@ -1,6 +1,6 @@
 import os
 from typing import Optional
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from app.core.config import settings
 
@@ -40,17 +40,6 @@ def guess_media_type(path: str) -> str:
     return "application/octet-stream"
 
 
-@router.post("/upload/{file_path:path}")
-async def upload_local_file(file_path: str, file: UploadFile = File(...)):
-    """Local fallback endpoint for file uploads when R2 is not configured."""
-    dest = get_safe_storage_path(settings.LOCAL_STORAGE_PATH, file_path)
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
-    content = await file.read()
-    with open(dest, "wb") as f:
-        f.write(content)
-    return {"status": "ok", "path": file_path}
-
-
 @router.api_route("/download/{file_path:path}", methods=["GET", "HEAD"])
 async def download_local_file(
     file_path: str,
@@ -58,7 +47,7 @@ async def download_local_file(
     filename: Optional[str] = Query(None, description="Custom filename for attachment download"),
 ):
     """
-    Local fallback endpoint to stream/download audio files.
+    Stream or download local audio files.
     Supports HTTP 206 Partial Content / Range requests for smooth scrubbing.
     """
     dest = get_safe_storage_path(settings.LOCAL_STORAGE_PATH, file_path)

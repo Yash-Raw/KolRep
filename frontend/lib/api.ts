@@ -7,29 +7,29 @@ import {
 } from "@/types";
 
 export function getBackendUrl(): string {
-  if (typeof window !== "undefined" && (window as any).__VOICEREP_BACKEND_URL__) {
-    return (window as any).__VOICEREP_BACKEND_URL__;
+  if (typeof window !== "undefined" && (window as any).__KOLREP_BACKEND_URL__) {
+    return (window as any).__KOLREP_BACKEND_URL__;
   }
   return process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
 }
 
 const DEFAULT_DEV_TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTExMTExMS0xMTExLTExMTEtMTExMS0xMTExMTExMTExMTEiLCJlbWFpbCI6ImRlbW9Adm9pY2VyZXAubG9jYWwifQ.jl57JKy4e9wZsUXkdw71R5m-1kkTqm3W7HCPGPFvZwQ";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTExMTExMS0xMTExLTExMTEtMTExMS0xMTExMTExMTExMTEiLCJlbWFpbCI6ImRlbW9Aa29scmVwLmxvY2FsIn0.Sp2pIv4Jw_7sEC7oTxSkKKGhZbs1CMhZ5DttDsvrzMM";
 
 export function getAuthToken(): string {
   if (typeof window === "undefined") return DEFAULT_DEV_TOKEN;
-  return localStorage.getItem("voicerep_auth_token") || DEFAULT_DEV_TOKEN;
+  return localStorage.getItem("kolrep_auth_token") || DEFAULT_DEV_TOKEN;
 }
 
 export function setAuthToken(token: string): void {
   if (typeof window !== "undefined") {
-    localStorage.setItem("voicerep_auth_token", token);
+    localStorage.setItem("kolrep_auth_token", token);
   }
 }
 
 export function clearAuthToken(): void {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("voicerep_auth_token");
+    localStorage.removeItem("kolrep_auth_token");
   }
 }
 
@@ -53,7 +53,7 @@ async function request<T>(
   } catch (err: any) {
     if (err?.message === "Load failed" || err?.message === "Failed to fetch") {
       throw new Error(
-        `Unable to reach VoiceRep backend at ${getBackendUrl()}. Ensure the local engine is active.`
+        `Unable to reach KolRep backend at ${getBackendUrl()}. Ensure the local engine is active.`
       );
     }
     throw err;

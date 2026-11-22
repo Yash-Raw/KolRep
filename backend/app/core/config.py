@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     BACKEND_URL: str = "http://localhost:8000"
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/voicerep"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/kolrep"
     SYNC_DATABASE_URL: Optional[str] = None
 
     # Voice Provider Configuration (100% self-hosted local engine)
@@ -30,16 +30,7 @@ class Settings(BaseSettings):
     SELF_HOSTED_VOICE_DIR: str = "./storage/voice_profiles"
     SELF_HOSTED_NFE_STEPS: int = 36
 
-    # Gemini (Optional Analysis)
-    GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-3.8-flash"
-
-    # Storage (Cloudflare R2 / S3)
-    R2_ACCOUNT_ID: Optional[str] = None
-    R2_ACCESS_KEY_ID: Optional[str] = None
-    R2_SECRET_ACCESS_KEY: Optional[str] = None
-    R2_BUCKET_NAME: str = "voicerep-audio"
-    R2_ENDPOINT_URL: Optional[str] = None
+    # Local Storage
     LOCAL_STORAGE_PATH: str = "./storage"
     STORAGE_LOCAL_DIR: Optional[str] = None
 
@@ -51,7 +42,7 @@ class Settings(BaseSettings):
     MAX_AUDIO_DURATION_SECONDS: int = 300
 
     # Desktop Application Mode (Native macOS deployment)
-    VOICEREP_DESKTOP_MODE: bool = False
+    KOLREP_DESKTOP_MODE: bool = False
     DESKTOP_DATA_DIR: Optional[str] = None
     ENABLE_REDIS: bool = True
 
@@ -62,13 +53,13 @@ class Settings(BaseSettings):
     )
 
     def model_post_init(self, __context) -> None:
-        if self.VOICEREP_DESKTOP_MODE:
-            base_dir = Path(self.DESKTOP_DATA_DIR) if self.DESKTOP_DATA_DIR else (Path.home() / "Library" / "Application Support" / "VoiceRep")
+        if self.KOLREP_DESKTOP_MODE:
+            base_dir = Path(self.DESKTOP_DATA_DIR) if self.DESKTOP_DATA_DIR else (Path.home() / "Library" / "Application Support" / "KolRep")
             self.DESKTOP_DATA_DIR = str(base_dir)
             
             # Switch database to SQLite if not explicitly set to something non-default
             if "postgresql" in self.DATABASE_URL:
-                db_path = base_dir / "database" / "voicerep.db"
+                db_path = base_dir / "database" / "kolrep.db"
                 self.DATABASE_URL = f"sqlite+aiosqlite:///{db_path}"
                 self.SYNC_DATABASE_URL = f"sqlite:///{db_path}"
             

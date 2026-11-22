@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-VoiceRep Standalone Desktop Backend Entrypoint.
+KolRep Standalone Desktop Backend Entrypoint.
 Boots the packaged FastAPI neural inference engine in 100% offline desktop mode.
 """
 import argparse
 import importlib.metadata
 import os
 from pathlib import Path
+import shutil
 import signal
 import sys
 
@@ -15,20 +16,32 @@ sys.modules["torchcodec"] = None
 sys.modules["torchcodec.decoders"] = None
 
 # Ensure FFmpeg directory and common binary paths are on os.environ["PATH"] early
+_conda_prefix = os.environ.get("CONDA_PREFIX")
+_home = Path.home()
 _candidate_ffmpeg_paths = [
-    os.environ.get("VOICEREP_FFMPEG_PATH"),
-    "/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/ffmpeg",
-    "/opt/homebrew/bin/ffmpeg",
-    "/usr/local/bin/ffmpeg",
+    os.environ.get("KOLREP_FFMPEG_PATH"),
 ]
 if hasattr(sys, "executable"):
     _exec_dir = Path(sys.executable).resolve().parent
     _candidate_ffmpeg_paths.extend([
         str(_exec_dir / "bin" / "ffmpeg"),
         str(_exec_dir / "ffmpeg"),
-        str(_exec_dir.parent / "Resources" / "resources" / "bin" / "ffmpeg"),
+        str(_exec_dir.parent / "bin" / "ffmpeg"),
         str(_exec_dir.parent / "Resources" / "bin" / "ffmpeg"),
+        str(_exec_dir.parent / "Resources" / "resources" / "bin" / "ffmpeg"),
+        str(_exec_dir.parent.parent / "bin" / "ffmpeg"),
+        str(_exec_dir.parent.parent / "resources" / "bin" / "ffmpeg"),
+        str(_exec_dir.parent.parent.parent / "bin" / "ffmpeg"),
     ])
+if _conda_prefix:
+    _candidate_ffmpeg_paths.append(str(Path(_conda_prefix) / "bin" / "ffmpeg"))
+_candidate_ffmpeg_paths.extend([
+    str(_home / "miniforge3" / "envs" / "kolrep" / "bin" / "ffmpeg"),
+    str(_home / "miniconda3" / "envs" / "kolrep" / "bin" / "ffmpeg"),
+    "/opt/homebrew/Caskroom/miniforge/base/envs/kolrep/bin/ffmpeg",
+    "/opt/homebrew/bin/ffmpeg",
+    "/usr/local/bin/ffmpeg",
+])
 
 _ffmpeg_bin = None
 for _p in _candidate_ffmpeg_paths:
@@ -37,20 +50,22 @@ for _p in _candidate_ffmpeg_paths:
         break
 
 if not _ffmpeg_bin:
-    import shutil
     _ffmpeg_bin = shutil.which("ffmpeg")
 
 _extra_paths = [
     "/opt/homebrew/bin",
     "/opt/homebrew/sbin",
     "/usr/local/bin",
-    "/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin",
 ]
+if _conda_prefix:
+    _extra_paths.append(str(Path(_conda_prefix) / "bin"))
+if Path("/opt/homebrew/Caskroom/miniforge/base/envs/kolrep/bin").exists():
+    _extra_paths.append("/opt/homebrew/Caskroom/miniforge/base/envs/kolrep/bin")
 if _ffmpeg_bin:
     _ffmpeg_dir = str(Path(_ffmpeg_bin).resolve().parent)
     if _ffmpeg_dir not in _extra_paths:
         _extra_paths.insert(0, _ffmpeg_dir)
-    os.environ["VOICEREP_FFMPEG_PATH"] = _ffmpeg_bin
+    os.environ["KOLREP_FFMPEG_PATH"] = _ffmpeg_bin
 
 _current_path = os.environ.get("PATH", "")
 _new_path_items = [p for p in _extra_paths if p not in _current_path.split(":")]
@@ -186,20 +201,20 @@ sys.path.insert(0, str(CURRENT_DIR))
 
 
 def main():
-    parser = argparse.ArgumentParser(description="VoiceRep Desktop Engine")
+    parser = argparse.ArgumentParser(description="KolRep Desktop Engine")
     parser.add_argument("--host", default="127.0.0.1", help="Binding host (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8000, help="Binding port (default: 8000)")
     parser.add_argument("--data-dir", default=None, help="Custom data directory")
     args = parser.parse_args()
 
     # Enable Desktop Mode
-    os.environ["VOICEREP_DESKTOP_MODE"] = "1"
+    os.environ["KOLREP_DESKTOP_MODE"] = "1"
     os.environ["ENABLE_REDIS"] = "false"
 
     base_data_dir = (
         Path(args.data_dir)
         if args.data_dir
-        else Path.home() / "Library" / "Application Support" / "VoiceRep"
+        else Path.home() / "Library" / "Application Support" / "KolRep"
     )
     base_data_dir.mkdir(parents=True, exist_ok=True)
     os.environ["DESKTOP_DATA_DIR"] = str(base_data_dir)
@@ -208,7 +223,7 @@ def main():
     try:
         os.chdir(str(base_data_dir))
     except Exception as e:
-        print(f"[VoiceRep Desktop Engine] Warning: could not chdir to {base_data_dir}: {e}", file=sys.stderr)
+        print(f"[KolRep Desktop Engine] Warning: could not chdir to {base_data_dir}: {e}", file=sys.stderr)
 
     # Point HuggingFace home and torch cache to the persistent models directory
     models_dir = base_data_dir / "models"
@@ -216,14 +231,14 @@ def main():
     os.environ["HF_HOME"] = str(models_dir)
     os.environ["TORCH_HOME"] = str(models_dir)
 
-    # Set up persistent file logging to Library/Application Support/VoiceRep/engine.log
+    # Set up persistent file logging to Library/Application Support/KolRep/engine.log
     import logging
     engine_log_file = base_data_dir / "engine.log"
     file_handler = logging.FileHandler(str(engine_log_file), encoding="utf-8")
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
     logging.getLogger().addHandler(file_handler)
-    logging.getLogger("voicerep").addHandler(file_handler)
+    logging.getLogger("kolrep").addHandler(file_handler)
 
     # Import app after environment variables are set
     from app.core.config import settings
@@ -232,7 +247,7 @@ def main():
 
     def handle_shutdown(signum, frame):
         import asyncio
-        print(f"\n[VoiceRep Desktop Engine] Received termination signal ({signum}). Shutting down...")
+        print(f"\n[KolRep Desktop Engine] Received termination signal ({signum}). Shutting down...")
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
@@ -244,9 +259,9 @@ def main():
     signal.signal(signal.SIGINT, handle_shutdown)
     signal.signal(signal.SIGTERM, handle_shutdown)
 
-    print(f"[VoiceRep Desktop Engine] Starting on http://{args.host}:{args.port}", flush=True)
-    print(f"[VoiceRep Desktop Engine] Persistent Data Directory: {base_data_dir}", flush=True)
-    print(f"[VoiceRep Desktop Engine] Database URL: {settings.DATABASE_URL}", flush=True)
+    print(f"[KolRep Desktop Engine] Starting on http://{args.host}:{args.port}", flush=True)
+    print(f"[KolRep Desktop Engine] Persistent Data Directory: {base_data_dir}", flush=True)
+    print(f"[KolRep Desktop Engine] Database URL: {settings.DATABASE_URL}", flush=True)
 
     uvicorn.run(
         app,

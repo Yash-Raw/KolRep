@@ -11,12 +11,12 @@ from typing import Optional
 from app.core.config import settings
 from app.schemas.audio import AudioQualityReport
 
-logger = logging.getLogger("voicerep.audio")
+logger = logging.getLogger("kolrep.audio")
 
 
 def get_binary_path(name: str) -> str:
     # 1. Check explicit environment override
-    env_key = f"VOICEREP_{name.upper()}_PATH"
+    env_key = f"KOLREP_{name.upper()}_PATH"
     if os.environ.get(env_key) and os.path.exists(os.environ[env_key]):
         return os.environ[env_key]
 
@@ -31,8 +31,8 @@ def get_binary_path(name: str) -> str:
             exec_dir.parent / "Resources" / "resources" / "bin" / name,
             exec_dir.parent.parent / "bin" / name,
             exec_dir.parent.parent / "resources" / "bin" / name,
-            Path("/Applications/VoiceRep.app/Contents/Resources/resources/bin") / name,
-            Path.home() / "Applications" / "VoiceRep.app" / "Contents" / "Resources" / "resources" / "bin" / name,
+            Path("/Applications/KolRep.app/Contents/Resources/resources/bin") / name,
+            Path.home() / "Applications" / "KolRep.app" / "Contents" / "Resources" / "resources" / "bin" / name,
         ]
         for cp in candidate_paths:
             if cp.exists() and os.access(str(cp), os.X_OK):
@@ -47,10 +47,18 @@ def get_binary_path(name: str) -> str:
     path = shutil.which(name)
     if path:
         return path
-    # 4. Check conda environment
-    conda_bin = f"/opt/homebrew/Caskroom/miniforge/base/envs/voicerep/bin/{name}"
-    if os.path.exists(conda_bin):
-        return conda_bin
+    # 4. Check active or standard conda environments
+    conda_candidates = []
+    if os.environ.get("CONDA_PREFIX"):
+        conda_candidates.append(Path(os.environ["CONDA_PREFIX"]) / "bin" / name)
+    conda_candidates.extend([
+        Path.home() / "miniforge3" / "envs" / "kolrep" / "bin" / name,
+        Path.home() / "miniconda3" / "envs" / "kolrep" / "bin" / name,
+        Path(f"/opt/homebrew/Caskroom/miniforge/base/envs/kolrep/bin/{name}"),
+    ])
+    for conda_bin in conda_candidates:
+        if conda_bin.exists():
+            return str(conda_bin)
     # 5. Check homebrew
     brew_bin = f"/opt/homebrew/bin/{name}"
     if os.path.exists(brew_bin):

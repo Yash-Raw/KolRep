@@ -5,7 +5,7 @@ import logging
 from typing import Any, Callable, Coroutine, Optional
 import uuid
 
-logger = logging.getLogger("voicerep.desktop.job_manager")
+logger = logging.getLogger("kolrep.desktop.job_manager")
 
 
 @dataclass

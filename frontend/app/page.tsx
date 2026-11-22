@@ -9,7 +9,7 @@ export default function LandingPage() {
       <section className="broadcast-hero">
         <div className="broadcast-kicker">
           <p className="eyebrow">INDEPENDENT VOICE PRODUCTION</p>
-          <p className="eyebrow">RECORDED BY YOU. REIMAGINED BY VOICEREP.</p>
+          <p className="eyebrow">RECORDED BY YOU. REIMAGINED BY KOLREP.</p>
         </div>
         <h1 className="headline-enter">
           A voice of<br />
@@ -32,7 +32,7 @@ export default function LandingPage() {
         <div className="broadcast-art" role="img" aria-label="Analog signal monitor">
           <span className="broadcast-art-label">FIG. 01 / THE HUMAN SIGNAL</span>
           <span className="broadcast-art-number" aria-hidden="true">
-            VR—01
+            KR—01
           </span>
           <SignalArt />
           <div className="broadcast-art-bottom">
@@ -59,7 +59,7 @@ export default function LandingPage() {
             <p className="eyebrow">01 / THE SOURCE</p>
             <h3>Start with your voice.</h3>
             <p>
-              Record or upload an authorized voice sample. VoiceRep builds an acoustic profile locally in seconds without sending your biometric data to any cloud.
+              Record or upload an authorized voice sample. KolRep builds an acoustic profile locally in seconds without sending your biometric data to any cloud.
             </p>
             <Link href="/voices" className="text-link">
               Build your voice library <ArrowUpRight size={16} />
@@ -141,7 +141,7 @@ export default function LandingPage() {
             <span className="brand-symbol">
               <AudioLines size={22} />
             </span>
-            VoiceRep
+            KolRep
           </Link>
           <div className="broadcast-footer-links">
             <Link href="/dashboard">Workspace</Link>
@@ -152,7 +152,7 @@ export default function LandingPage() {
         </div>
         <div className="broadcast-footer-bottom">
           <span>YOUR DEVICE. YOUR VOICE.</span>
-          <span>© {new Date().getFullYear()} VOICEREP — LOCAL VOICE REPLICATION</span>
+          <span>© {new Date().getFullYear()} KOLREP — LOCAL VOICE REPLICATION</span>
         </div>
       </footer>
     </div>

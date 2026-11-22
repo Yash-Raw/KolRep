@@ -15,10 +15,10 @@ from app.models.user import User
 async def test_desktop_settings_resolution():
     with tempfile.TemporaryDirectory() as tmpdir:
         s = Settings(
-            VOICEREP_DESKTOP_MODE=True,
+            KOLREP_DESKTOP_MODE=True,
             DESKTOP_DATA_DIR=tmpdir,
         )
-        assert s.VOICEREP_DESKTOP_MODE is True
+        assert s.KOLREP_DESKTOP_MODE is True
         assert s.ENABLE_REDIS is False
         assert s.DATABASE_URL.startswith("sqlite+aiosqlite:///")
         assert tmpdir in s.DATABASE_URL
@@ -45,10 +45,10 @@ async def test_desktop_init_db():
 @pytest.mark.asyncio
 async def test_desktop_health_endpoint(client):
     from app.core.config import settings
-    original_desktop = settings.VOICEREP_DESKTOP_MODE
+    original_desktop = settings.KOLREP_DESKTOP_MODE
     original_redis = settings.ENABLE_REDIS
     try:
-        settings.VOICEREP_DESKTOP_MODE = True
+        settings.KOLREP_DESKTOP_MODE = True
         settings.ENABLE_REDIS = False
 
         res = await client.get("/api/v1/health")
@@ -58,7 +58,7 @@ async def test_desktop_health_endpoint(client):
         assert "disabled" in data["redis"]
         assert data["status"] == "ok"
     finally:
-        settings.VOICEREP_DESKTOP_MODE = original_desktop
+        settings.KOLREP_DESKTOP_MODE = original_desktop
         settings.ENABLE_REDIS = original_redis
 
 

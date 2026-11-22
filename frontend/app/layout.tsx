@@ -9,7 +9,7 @@ const studioFont = localFont({ src: "../public/fonts/SpaceGrotesk.ttf", variable
 const consoleFont = localFont({ src: "../public/fonts/IBMPlexMono-Regular.ttf", variable: "--font-console", display: "swap", weight: "400" });
 
 export const metadata: Metadata = {
-  title: "VoiceRep — 100% Local AI Voice Cloning & Studio Narration",
+  title: "KolRep — 100% Local AI Voice Cloning & Studio Narration",
   description:
     "Instant zero-shot local voice cloning and studio narration with dual-layer C2PA cryptographic provenance and 100% data privacy.",
 };

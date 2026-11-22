@@ -1,17 +1,17 @@
 [package]
-name = "app"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
+name = "kolrep"
+version = "1.0.0"
+description = "KolRep Local AI Voice Studio"
+authors = ["Yash-Raw"]
+license = "AGPL-3.0"
+repository = "https://github.com/Yash-Raw/KolRep"
 edition = "2024"
 rust-version = "1.90"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "app_lib"
+name = "kolrep_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

@@ -12,7 +12,7 @@ const navItems = [
   { href: "/verify", label: "Verify audio", icon: ShieldCheck },
   { href: "/settings", label: "Settings", icon: SlidersHorizontal },
 ];
-function Brand({ href }: { href: string }) { return <Link href={href} className="brand"><span className="brand-symbol"><AudioLines size={22} /></span>VoiceRep</Link>; }
+function Brand({ href }: { href: string }) { return <Link href={href} className="brand"><span className="brand-symbol"><AudioLines size={22} /></span>KolRep</Link>; }
 
 export function Navbar() {
   const pathname = usePathname();
@@ -50,7 +50,7 @@ export function Navbar() {
         <div className="nav-group"><p className="nav-group-label">WORKSPACE</p>{navItems.slice(0, 4).map(item => <Link key={item.href} href={item.href} className="nav-link" aria-current={pathname.startsWith(item.href) ? "page" : undefined}><item.icon size={17} strokeWidth={1.5} />{item.label}</Link>)}</div>
         <div className="nav-group"><p className="nav-group-label">UTILITIES</p>{navItems.slice(4).map(item => <Link key={item.href} href={item.href} className="nav-link" aria-current={pathname.startsWith(item.href) ? "page" : undefined}><item.icon size={17} strokeWidth={1.5} />{item.label}</Link>)}</div>
       </nav>
-      <div className="nav-footer"><div className="nav-local"><i />Local workspace</div><p>Your device. Your voice.<br />Made for independent creation.</p><p className="mono">VOICEREP / V1.0</p></div>
+      <div className="nav-footer"><div className="nav-local"><i />Local workspace</div><p>Your device. Your voice.<br />Made for independent creation.</p><p className="mono">KOLREP / V1.0</p></div>
     </aside>
     <header className="app-topbar"><div className="app-breadcrumb"><button ref={triggerRef} className="mobile-menu" aria-label="Open navigation" aria-expanded={open} aria-controls="application-navigation" onClick={() => setOpen(true)}><Menu size={20} /></button><span>Workspace</span><ChevronRight size={12} /><span>{current?.label || "Opening workspace"}</span></div><span className="topbar-note mono">LOCAL VOICE PRODUCTION</span></header>
   </>;

@@ -1,11 +1,11 @@
 # Local release checklist
 
-Audit date: 2026-11-11. Target: users install and run VoiceRep on their own trusted machine. Current decision: **hold the stable release** until the open gates below are completed. Changes are local and have not been committed, pushed, or published.
+Audit date: 2026-11-11. Target: users install and run KolRep on their own trusted machine. Current decision: **hold the stable release** until the open gates below are completed. Changes are local and have not been committed, pushed, or published.
 
 ## Automated evidence
 
 - [x] Initial production frontend build passed, including TypeScript.
-- [x] Existing backend suite: 23 passed in the installed Python 3.11 `voicerep` environment.
+- [x] Existing backend suite: 23 passed in the installed Python 3.11 `kolrep` environment.
 - [x] Added regression checks for fixed local identity, blocked key reads/writes, symlink escapes, upload limits, audio tampering, and untrusted signers.
 - [x] Final checks after release changes: backend 28 passed (one existing Starlette deprecation warning); frontend production build and TypeScript passed; shell syntax, Compose YAML/loopback assertions, and `git diff --check` passed. Compose runtime was not exercised.
 - [ ] Frontend lint clean. Baseline: 36 errors, 14 warnings (explicit `any`, hook order/lifecycle, ref access, purity). Fix the source rather than disabling the rules.

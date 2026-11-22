@@ -14,7 +14,7 @@ from cryptography.x509.oid import NameOID
 
 from app.core.config import settings
 
-logger = logging.getLogger("voicerep.c2pa")
+logger = logging.getLogger("kolrep.c2pa")
 
 
 def _get_key_dir() -> Path:
@@ -25,10 +25,10 @@ def _get_key_dir() -> Path:
     )
     path = Path(storage_dir)
     if not path.is_absolute():
-        if getattr(settings, "VOICEREP_DESKTOP_MODE", False) and getattr(settings, "DESKTOP_DATA_DIR", None):
+        if getattr(settings, "KOLREP_DESKTOP_MODE", False) and getattr(settings, "DESKTOP_DATA_DIR", None):
             path = Path(settings.DESKTOP_DATA_DIR) / path
-        elif getattr(settings, "VOICEREP_DESKTOP_MODE", False):
-            path = Path.home() / "Library" / "Application Support" / "VoiceRep" / path
+        elif getattr(settings, "KOLREP_DESKTOP_MODE", False):
+            path = Path.home() / "Library" / "Application Support" / "KolRep" / path
         else:
             path = Path.cwd() / path
     return path / "keys"
@@ -67,7 +67,7 @@ class C2PAService:
             KEY_DIR.mkdir(parents=True, exist_ok=True)
         except OSError as e:
             logger.warning(f"Could not create keys directory at {KEY_DIR}: {e}. Falling back to user application support...")
-            fallback_dir = Path.home() / "Library" / "Application Support" / "VoiceRep" / "storage" / "keys"
+            fallback_dir = Path.home() / "Library" / "Application Support" / "KolRep" / "storage" / "keys"
             fallback_dir.mkdir(parents=True, exist_ok=True)
             KEY_DIR = fallback_dir
             KEY_FILE = KEY_DIR / "c2pa_private.key"
@@ -81,17 +81,17 @@ class C2PAService:
                     pem_data = f.read()
                     self._certificate = x509.load_pem_x509_certificate(pem_data)
                     self._cert_pem = pem_data.decode("utf-8")
-                logger.info("Loaded existing VoiceRep C2PA cryptographic keypair.")
+                logger.info("Loaded existing KolRep C2PA cryptographic keypair.")
                 return
 
-            logger.info("Generating new VoiceRep C2PA cryptographic signing identity (X.509 ECDSA P-256)...")
+            logger.info("Generating new KolRep C2PA cryptographic signing identity (X.509 ECDSA P-256)...")
             self._private_key = ec.generate_private_key(ec.SECP256R1())
 
             subject = issuer = x509.Name([
                 x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "VoiceRep Safe AI Provenance"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "KolRep Safe AI Provenance"),
                 x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "Cryptographic Trust & Safety"),
-                x509.NameAttribute(NameOID.COMMON_NAME, "VoiceRep Generation Signer CA"),
+                x509.NameAttribute(NameOID.COMMON_NAME, "KolRep Generation Signer CA"),
             ])
 
             now = datetime.datetime.now(datetime.timezone.utc)
@@ -121,7 +121,7 @@ class C2PAService:
                 f.write(cert_pem)
 
             self._cert_pem = cert_pem.decode("utf-8")
-            logger.info("VoiceRep C2PA keys successfully generated and stored.")
+            logger.info("KolRep C2PA keys successfully generated and stored.")
         except Exception as e:
             logger.error(f"Failed to initialize C2PA cryptographic keypair: {e}")
             raise
@@ -137,7 +137,7 @@ class C2PAService:
         model_id: str,
         audio_bytes: bytes,
         acoustic_payload: Optional[dict[str, Any]] = None,
-        license_name: str = "VoiceRep AI Synthetic Media Permissive License v1.0",
+        license_name: str = "KolRep AI Synthetic Media Permissive License v1.0",
     ) -> dict[str, Any]:
         """
         Creates a formal C2PA-compliant manifest structure specifying:
@@ -151,25 +151,25 @@ class C2PAService:
 
         manifest = {
             "c2pa_version": "1.3.0",
-            "claim_generator": "VoiceRep/1.0.0 (C2PA Deepfake Protection Engine)",
+            "claim_generator": "KolRep/1.0.0 (C2PA Deepfake Protection Engine)",
             "instance_id": f"urn:uuid:{generation_id}",
             "format": "audio/mpeg",
-            "title": "VoiceRep AI Synthesized Audio",
+            "title": "KolRep AI Synthesized Audio",
             "claim_generator_info": {
-                "name": "VoiceRep AI",
+                "name": "KolRep AI",
                 "version": "1.0.0",
-                "organization": "VoiceRep Safe AI Provenance",
+                "organization": "KolRep Safe AI Provenance",
             },
             "actions": [
                 {
                     "action": "c2pa.created",
                     "when": now_iso,
-                    "softwareAgent": "VoiceRep AI Voice Platform v1.0",
+                    "softwareAgent": "KolRep AI Voice Platform v1.0",
                 },
                 {
                     "action": "c2pa.synthesized",
                     "when": now_iso,
-                    "softwareAgent": f"VoiceRep Neural Synthesizer ({model_id})",
+                    "softwareAgent": f"KolRep Neural Synthesizer ({model_id})",
                 },
             ],
             "assertions": [
@@ -203,7 +203,7 @@ class C2PAService:
                 "label": "c2pa.watermark",
                 "data": {
                     "type": "acoustic_in_band",
-                    "protocol": acoustic_payload.get("protocol", "VoiceRep-QIM-HAS-v1"),
+                    "protocol": acoustic_payload.get("protocol", "KolRep-QIM-HAS-v1"),
                     "user_hash": acoustic_payload.get("user_hash"),
                     "gen_hash": acoustic_payload.get("gen_hash"),
                     "timestamp": acoustic_payload.get("timestamp"),
@@ -214,7 +214,7 @@ class C2PAService:
 
     def sign_manifest(self, manifest: dict[str, Any]) -> dict[str, Any]:
         """
-        Signs the canonical JSON manifest with VoiceRep's X.509 private key using ECDSA SHA-256.
+        Signs the canonical JSON manifest with KolRep's X.509 private key using ECDSA SHA-256.
         """
         canonical_bytes = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
         signature = self._private_key.sign(canonical_bytes, ec.ECDSA(hashes.SHA256()))

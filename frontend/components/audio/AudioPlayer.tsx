@@ -13,7 +13,7 @@ interface AudioPlayerProps {
 
 export function AudioPlayer({
   src,
-  filename = "voicerep_audio.mp3",
+  filename = "kolrep_audio.mp3",
   autoPlay = false,
   showWatermarkBadge = true,
 }: AudioPlayerProps) {

@@ -60,7 +60,7 @@ from app.core.config import settings
 from app.providers.base import VoiceProvider
 from app.services.audio_service import FFMPEG_BIN
 
-logger = logging.getLogger("voicerep.self_hosted")
+logger = logging.getLogger("kolrep.self_hosted")
 
 # Ensure Conda env binary directory is on PATH for transformers and child processes
 CONDA_BIN = str(Path(FFMPEG_BIN).parent)
@@ -324,7 +324,7 @@ class SelfHostedProvider(VoiceProvider):
         is_corrupt = False
         lower_ref = ref_text.lower()
         if not ref_text or any(phrase in lower_ref for phrase in [
-            "authorize voicerep",
+            "authorize kolrep",
             "hereby authorize",
             "personalized speech synthesis",
             "authorized speech synthesis",
@@ -351,7 +351,7 @@ class SelfHostedProvider(VoiceProvider):
                     logger.warning(f"Failed to persist repaired reference text for {voice_id}: {save_err}")
 
         if not ref_text:
-            ref_text = "I hereby authorize VoiceRep to clone my voice for authorized speech synthesis."
+            ref_text = "I hereby authorize KolRep to clone my voice for authorized speech synthesis."
 
         return ref_text
 
@@ -388,7 +388,7 @@ class SelfHostedProvider(VoiceProvider):
         is_boilerplate = False
         lower_cand = candidate_text.lower()
         if any(phrase in lower_cand for phrase in [
-            "authorize voicerep",
+            "authorize kolrep",
             "hereby authorize",
             "personalized speech synthesis",
             "authorized speech synthesis",
@@ -409,7 +409,7 @@ class SelfHostedProvider(VoiceProvider):
             ref_text = candidate_text
 
         if not ref_text:
-            ref_text = "I hereby authorize VoiceRep to clone my voice for authorized speech synthesis."
+            ref_text = "I hereby authorize KolRep to clone my voice for authorized speech synthesis."
 
         # Save reference text
         with open(voice_dir / "reference.txt", "w", encoding="utf-8") as f:
